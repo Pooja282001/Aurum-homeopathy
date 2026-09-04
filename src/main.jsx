@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
 
@@ -24,7 +24,7 @@ function App() {
     <div className="app-shell">
       <header className="topbar">
         <button className="brand" onClick={() => goTo('Home')} aria-label="Go to home">
-          <span className="brand-mark">a</span>
+          <span className="brand-mark" aria-hidden="true"><span>+</span></span>
           <span><strong>aruna</strong><small>pathology & health</small></span>
         </button>
         <nav className="desktop-nav" aria-label="Main navigation">
@@ -48,7 +48,7 @@ function App() {
 
 function Home({ goTo }) {
   return <>
-    <section className="hero page-width">
+    <Reveal className="hero page-width">
       <div className="hero-copy">
         <p className="eyebrow"><span className="pulse-dot" /> Trusted by families since 1998</p>
         <h1>Know more.<br /><em>Feel better.</em></h1>
@@ -57,10 +57,32 @@ function Home({ goTo }) {
         <div className="trust-row"><div className="avatars"><span>R</span><span>M</span><span>S</span></div><p><strong>4.9/5</strong> from 2,000+ patient visits</p></div>
       </div>
       <div className="hero-art"><div className="hero-photo" /><div className="floating-note"><span className="check">✓</span><div><strong>Results you can trust</strong><small>ISO certified laboratory</small></div></div><div className="vertical-label">EST. 1998 <i>•</i> ARUNA</div></div>
-    </section>
-    <section className="intro-band"><div className="page-width intro-grid"><p className="section-kicker">01 / The Aruna difference</p><div><h2>Healthcare that starts with <em>listening.</em></h2><p className="muted">From your first hello to the moment your report arrives, every detail is designed to make care feel simpler, warmer, and more personal.</p><button className="text-btn" onClick={() => goTo('About Us')}>Our story <span>→</span></button></div></div></section>
-    <section className="service-preview page-width"><div className="section-heading"><div><p className="section-kicker">02 / What we do</p><h2>Clarity for every<br /><em>step forward.</em></h2></div><button className="round-arrow" onClick={() => goTo('Services')}>↗</button></div><div className="service-grid">{services.map((service) => <article className="service-card" key={service.title}><span className="service-icon">{service.icon}</span><h3>{service.title}</h3><p>{service.copy}</p><span className="card-arrow">↗</span></article>)}</div></section>
+    </Reveal>
+    <Reveal className="intro-band"><div className="page-width intro-grid"><p className="section-kicker">01 / The Aruna difference</p><div><h2>Healthcare that starts with <em>listening.</em></h2><p className="muted">From your first hello to the moment your report arrives, every detail is designed to make care feel simpler, warmer, and more personal.</p><button className="text-btn" onClick={() => goTo('About Us')}>Our story <span>→</span></button></div></div></Reveal>
+    <Reveal className="home-story page-width">
+      <div className="story-copy"><p className="section-kicker">02 / A calmer kind of care</p><h2>People first.<br /><em>Always.</em></h2><p className="muted">Meet a care team that gives every question room, every sample attention, and every result a clear next step.</p><button className="text-btn" onClick={() => goTo('About Us')}>Meet the team <span>→</span></button></div>
+      <div className="story-photo story-photo-main" /><div className="story-photo story-photo-detail" /><span className="story-caption">Precision with presence</span>
+    </Reveal>
+    <Reveal className="service-preview page-width"><div className="section-heading"><div><p className="section-kicker">03 / What we do</p><h2>Clarity for every<br /><em>step forward.</em></h2></div><button className="round-arrow" onClick={() => goTo('Services')}>↗</button></div><div className="service-grid">{services.map((service) => <article className="service-card" key={service.title}><span className="service-icon">{service.icon}</span><h3>{service.title}</h3><p>{service.copy}</p><span className="card-arrow">↗</span></article>)}</div></Reveal>
   </>
+}
+
+function Reveal({ className, children }) {
+  const elementRef = useRef(null)
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible')
+        observer.disconnect()
+      }
+    }, { threshold: 0.12 })
+
+    observer.observe(elementRef.current)
+    return () => observer.disconnect()
+  }, [])
+
+  return <div ref={elementRef} className={`reveal ${className}`}>{children}</div>
 }
 
 function Subpage({ eyebrow, title, children }) { return <section className="subpage page-width"><p className="section-kicker">{eyebrow}</p><h1>{title}</h1>{children}</section> }
