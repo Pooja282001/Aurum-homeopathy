@@ -24,8 +24,7 @@ function App() {
     <div className="app-shell">
       <header className="topbar">
         <button className="brand" onClick={() => goTo('Home')} aria-label="Go to home">
-          <span className="brand-mark" aria-hidden="true"><span>+</span></span>
-          <span><strong>aruna</strong><small>pathology & health</small></span>
+          <img className="brand-logo" src="/assets/aurum-logo.png.png" alt="Dr. Shelke's Aurum Homeopathy" />
         </button>
         <nav className="desktop-nav" aria-label="Main navigation">
           {navItems.map((item) => <button className={screen === item ? 'active' : ''} onClick={() => goTo(item)} key={item}>{item}</button>)}
