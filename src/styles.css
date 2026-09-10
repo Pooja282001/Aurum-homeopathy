@@ -39,6 +39,15 @@ h1 em, h2 em { color: var(--coral); font-weight: 800; font-style: normal; }
 .hero-text { color: #66827a; font-size: 15px; line-height: 1.7; max-width: 410px; }
 .subheadline { margin-top: 14px; color: #5d7a72; font-size: 15px; line-height: 1.75; max-width: 560px; }
 .hero-actions { display: flex; align-items: center; gap: 27px; margin-top: 31px; }
+.appointment-popup-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 24px; }
+.appointment-popup-modal { background: rgba(255, 255, 255, 0.96); border-radius: 28px; width: min(420px, calc(100vw - 32px)); padding: 28px 20px 24px; text-align: center; box-shadow: 0 28px 60px rgba(0, 0, 0, 0.2); transform: scale(0.5); opacity: 0; animation: appointmentPopupIn 0.4s cubic-bezier(0.22, 1.2, 0.36, 1) forwards; }
+.appointment-popup-image { width: 220px; max-width: 100%; height: auto; display: block; margin: 0 auto 18px; }
+.appointment-popup-text { margin: 0; color: var(--ink); font-size: 1rem; font-weight: 600; line-height: 1.6; }
+@keyframes appointmentPopupIn {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
 .text-btn { background: transparent; padding: 0; font-size: 12px; color: var(--ink); }
 .secondary-btn { border: 1px solid var(--line); padding: 12px 18px; border-radius: 999px; background: rgba(255,255,255,0.4); }
 .secondary-btn span { color: var(--coral); font-size: 18px; margin-left: 8px; }

@@ -29,6 +29,8 @@ function App() {
   const [appointments, setAppointments] = useState(getAppointments)
   const [currentUser, setCurrentUser] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [showAppointmentPopup, setShowAppointmentPopup] = useState(false)
+  const appointmentRedirectTimerRef = useRef(null)
 
   const goTo = (nextScreen) => {
     setSubmitted(false)
@@ -36,6 +38,26 @@ function App() {
     setMobileMenuOpen(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
+
+  const triggerAppointmentPopup = () => {
+    if (appointmentRedirectTimerRef.current) {
+      window.clearTimeout(appointmentRedirectTimerRef.current)
+    }
+
+    setShowAppointmentPopup(true)
+    appointmentRedirectTimerRef.current = window.setTimeout(() => {
+      setShowAppointmentPopup(false)
+      goTo('Get Appointment')
+    }, 1500)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (appointmentRedirectTimerRef.current) {
+        window.clearTimeout(appointmentRedirectTimerRef.current)
+      }
+    }
+  }, [])
 
   const saveAppointments = (nextAppointments) => {
     setAppointments(nextAppointments)
@@ -69,7 +91,7 @@ function App() {
 
         <div className="header-actions">
           <button className="staff-link" onClick={() => currentUser ? goTo('Staff Dashboard') : goTo('Staff Login')}>{currentUser ? currentUser.role : 'Staff Login'}</button>
-          <button className="header-cta" onClick={() => goTo('Get Appointment')}>Book Appointment <span>↗</span></button>
+          <button className="header-cta" onClick={triggerAppointmentPopup}>Book Appointment <span>↗</span></button>
         </div>
 
         <button
@@ -100,8 +122,17 @@ function App() {
           <button className="mobile-staff-link" onClick={() => currentUser ? goTo('Staff Dashboard') : goTo('Staff Login')}>
             {currentUser ? currentUser.role : 'Staff Login'}
           </button>
-          <button className="mobile-cta" onClick={() => goTo('Get Appointment')}>Book Appointment <span>↗</span></button>
+          <button className="mobile-cta" onClick={triggerAppointmentPopup}>Book Appointment <span>↗</span></button>
         </nav>
+      )}
+
+      {showAppointmentPopup && (
+        <div className="appointment-popup-backdrop" aria-modal="true" role="dialog">
+          <div className="appointment-popup-modal">
+            <img className="appointment-popup-image" src="/doctor-popup.png" alt="Doctor illustration" />
+            <p className="appointment-popup-text">Redirecting you to schedule your consultation...</p>
+          </div>
+        </div>
       )}
 
       <main>
@@ -127,7 +158,7 @@ function Home({ goTo }) {
         <h1>Root-Cause Natural<br /><em>Healing</em></h1>
         <p className="hero-text">Holistic Homeopathic Care for Long-Term Healing</p>
         <p className="subheadline">Individualized care tailored to your unique health story. Experience safe, natural, and effective holistic treatment.</p>
-        <div className="hero-actions"><button className="primary-btn" onClick={() => goTo('Get Appointment')}>Book an appointment <span>↗</span></button><button className="secondary-btn text-btn" onClick={() => goTo('Services')}>Explore services <span>→</span></button></div>
+        <div className="hero-actions"><button className="primary-btn" onClick={triggerAppointmentPopup}>Book an appointment <span>↗</span></button><button className="secondary-btn text-btn" onClick={() => goTo('Services')}>Explore services <span>→</span></button></div>
         <div className="trust-row"><div className="avatars"><span>R</span><span>M</span><span>S</span></div><p><strong>4.9/5</strong> from 2,000+ patient visits</p></div>
       </div>
       <div className="hero-art">
@@ -219,7 +250,7 @@ function Services({ goTo }) {
                   <li key={condition}>{condition}</li>
                 ))}
               </ul>
-              <button className="service-btn" onClick={() => goTo('Get Appointment')}>Book Consultation</button>
+              <button className="service-btn" onClick={triggerAppointmentPopup}>Book Consultation</button>
             </article>
           ))}
         </div>
@@ -252,7 +283,7 @@ function StaffDashboard({ user, appointments, saveAppointments, logout }) {
   return <Subpage eyebrow={`${user.role} / Incoming appointments`} title={<>Manage<br /><em>requests.</em></>}><div className="dashboard-toolbar"><p>{appointments.length} appointment{appointments.length === 1 ? '' : 's'} received</p><button className="text-btn" onClick={logout}>Sign out <span>↗</span></button></div>{appointments.length === 0 ? <div className="empty-state"><span className="big-icon">✓</span><h2>No incoming appointments.</h2><p>New requests submitted through the public appointment form will appear here.</p></div> : <div className="appointment-list">{appointments.map((appointment) => <article className="appointment-item" key={appointment.id}>{editingId === appointment.id ? <div className="appointment-edit"><input value={editValues.name} onChange={(event) => updateField('name', event.target.value)} aria-label="Patient name" /><input value={editValues.phone} onChange={(event) => updateField('phone', event.target.value)} aria-label="Phone number" /><select value={editValues.service} onChange={(event) => updateField('service', event.target.value)} aria-label="Service"><option>Pathology testing</option><option>Health screening</option><option>Home collection</option></select><select value={editValues.status} onChange={(event) => updateField('status', event.target.value)} aria-label="Status"><option>New</option><option>Confirmed</option><option>Completed</option><option>Cancelled</option></select><button className="primary-btn" onClick={saveEdit}>Save</button><button className="text-btn" onClick={() => setEditingId(null)}>Cancel</button></div> : <><div><span className="appointment-status">{appointment.status}</span><h3>{appointment.name}</h3><p>{appointment.service} · {appointment.phone}</p><small>Received {new Date(appointment.createdAt).toLocaleString()}</small></div>{user.role === 'Super Admin' && <div className="appointment-actions"><button className="text-btn" onClick={() => startEdit(appointment)}>Edit</button><button className="text-btn danger-btn" onClick={() => removeAppointment(appointment.id)}>Delete</button></div>}</>}</article>)}</div>}</Subpage>
 }
 
-function Contact() { return <div id="contact"><Subpage eyebrow="Contact us / 04" title={<>Here when you<br /><em>need us.</em></>}><div className="contact-layout"><div className="contact-detail"><p className="lead">Come by for a visit, call us, or send a note. We are happy to help.</p><div className="detail-block"><small>VISIT</small><p>14 Green Park Avenue<br />New Delhi, 110016</p></div><div className="detail-block"><small>CALL</small><p>+91 11 4567 8900<br />hello@aurumhomeopathy.in</p></div></div><div className="map-card"><div className="map-lines" /><span className="map-pin">+</span><div className="map-label"><strong>Dr. Shelke's Aurum</strong><small>14 Green Park Avenue</small></div></div></div></Subpage></div> }
+function Contact() { return <div id="contact"><Subpage eyebrow="Contact us / 04" title={<>Here when you<br /><em>need us.</em></>}><div className="contact-layout"><div className="contact-detail"><p className="lead">Come by for a visit, call us, or send a note. We are happy to help.</p><div className="detail-block"><small>VISIT</small><p>2nd Floor, Vision Gallaria,<br />Kunal Icon Road, Pimple Saudagar,<br />Pimpri-Chinchwad, Pune 411027</p></div><div className="detail-block"><small>CALL</small><p>+91 9145692117<br />aurumhomeopathy4@gmil.com</p></div></div><div className="map-card"><div className="map-lines" /><span className="map-pin">+</span><div className="map-label"><strong>Dr. Shelke's Aurum</strong><small>2nd Floor, Vision Gallaria</small></div></div></div></Subpage></div> }
 
 export default App
 
