@@ -129,16 +129,16 @@ function App() {
       {showAppointmentPopup && (
         <div className="appointment-popup-backdrop" aria-modal="true" role="dialog">
           <div className="appointment-popup-modal">
-            <img className="appointment-popup-image" src="/doctor-popup.png" alt="Doctor illustration" />
+            <img className="appointment-popup-image" src="/assets/doctor-popup.svg.jfif" alt="Doctor illustration" />
             <p className="appointment-popup-text">Redirecting you to schedule your consultation...</p>
           </div>
         </div>
       )}
 
       <main>
-        {screen === 'Home' && <Home goTo={goTo} />}
+        {screen === 'Home' && <Home goTo={goTo} triggerAppointmentPopup={triggerAppointmentPopup} />}
         {screen === 'About Us' && <About goTo={goTo} />}
-        {screen === 'Services' && <Services goTo={goTo} />}
+        {screen === 'Services' && <Services goTo={goTo} triggerAppointmentPopup={triggerAppointmentPopup} />}
         {screen === 'Get Appointment' && <Appointment submitted={submitted} setSubmitted={setSubmitted} addAppointment={addAppointment} />}
         {screen === 'Contact Us' && <Contact />}
         {screen === 'Staff Login' && <StaffLogin login={login} />}
@@ -150,7 +150,7 @@ function App() {
   )
 }
 
-function Home({ goTo }) {
+function Home({ goTo, triggerAppointmentPopup }) {
   return <>
     <Reveal className="hero page-width">
       <div className="hero-copy">
@@ -208,7 +208,7 @@ function Subpage({ eyebrow, title, children }) { return <section className="subp
 
 function About({ goTo }) { return <Subpage eyebrow="02 / ABOUT DR. SHELKE'S AURUM HOMEOPATHY" title={<><span className="title-black">A Better Standard of</span> <span className="title-accent">Natural Care in Pimple Saudagar</span></>}><div className="about-layout"><div className="about-gallery"><figure className="about-photo-card about-photo-main"><img src="/assets/dr.imagre.png" alt="Dr. Jayesh Shelke - Homeopathic Doctor in Pimple Saudagar Pune" /></figure></div><div className="about-copy"><p className="lead">We believe true healing begins with understanding the complete individual.</p><p>Led by Dr. Jayesh Shelke, Aurum Homeopathy provides compassionate, root-cause healing for patients across Pimple Saudagar and Pune. Our practice focuses on thorough constitutional case-taking to deliver safe, personalized, and 100% natural care.</p><div className="stats stats-two"><div><strong>6+</strong><small>Years of Clinical Excellence</small></div><div><strong>98%</strong><small>Patient Satisfaction</small></div></div><a className="primary-btn cta-link" href="#contact" onClick={(event) => { event.preventDefault(); goTo('Contact Us'); window.location.hash = '#contact'; }}>Book a Consultation <span>↗</span></a></div></div></Subpage> }
 
-function Services({ goTo }) {
+function Services({ goTo, triggerAppointmentPopup }) {
   const serviceCards = [
     {
       title: 'Skin & Hair Care',
