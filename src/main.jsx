@@ -104,14 +104,14 @@ function Home({ goTo }) {
         <div className="trust-item"><strong>6+ Years</strong><span>Clinical Experience</span></div>
         <div className="trust-item"><strong>2,000+</strong><span>Satisfied Patients</span></div>
         <div className="trust-item"><strong>100% Safe</strong><span>Individualized Remedies</span></div>
-        <div className="trust-item"><strong>In-Clinic &amp; Online</strong><span>Consultations Available</span></div>
+        <div className="trust-item"><strong>In-Clinic</strong><span>Consultations Available</span></div>
       </div>
     </section>
 
-    <Reveal className="intro-band"><div className="page-width intro-grid"><p className="section-kicker">01 / The Aurum difference</p><div><h2>Healthcare that starts with <em>listening.</em></h2><p className="muted">From your first hello to the moment your report arrives, every detail is designed to make care feel simpler, warmer, and more personal.</p><button className="text-btn" onClick={() => goTo('About Us')}>Our story <span>→</span></button></div></div></Reveal>
+    <Reveal className="intro-band"><div className="page-width intro-grid"><p className="section-kicker">01 / COMPASSIONATE CARE IN Pimple saidagar</p><div><h2>Healthcare that starts with <em>listening.</em></h2><p className="muted">From your initial detailed case-taking to your personalized remedy plan, every step is tailored around your complete health story to treat the root cause naturally.</p><button className="text-btn" onClick={() => goTo('About Us')}>Our story <span>→</span></button></div></div></Reveal>
     <Reveal className="home-story page-width">
-      <div className="story-copy"><p className="section-kicker">02 / A calmer kind of care</p><h2>People first.<br /><em>Always.</em></h2><p className="muted">Meet a care team that gives every question room, every sample attention, and every result a clear next step.</p><button className="text-btn" onClick={() => goTo('About Us')}>Meet the team <span>→</span></button></div>
-      <div className="story-photo story-photo-main" /><div className="story-photo story-photo-detail" /><span className="story-caption">Precision with presence</span>
+      <div className="story-copy"><p className="section-kicker">02 / A calmer kind of care</p><h2>People first.<br /><em>Always.</em></h2><p className="muted">Experience compassionate medical care where every concern is heard, every detail of your health history is valued, and every remedy is chosen for lasting relief.</p><button className="text-btn" onClick={() => goTo('About Us')}>Meet Dr. Jayesh <span>→</span></button></div>
+      <div className="story-photo story-photo-main" /><div className="story-photo story-photo-detail" />
     </Reveal>
     <Reveal className="service-preview page-width"><div className="section-heading"><div><p className="section-kicker">03 / What we do</p><h2>Clarity for every<br /><em>step forward.</em></h2></div><button className="round-arrow" onClick={() => goTo('Services')}>↗</button></div><div className="service-grid">{services.map((service) => <article className="service-card" key={service.title}><span className="service-icon">{service.icon}</span><h3>{service.title}</h3><p>{service.copy}</p><span className="card-arrow">↗</span></article>)}</div></Reveal>
   </>
