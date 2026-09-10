@@ -3,9 +3,9 @@ import { createRoot } from 'react-dom/client'
 import './styles.css'
 
 const services = [
-  { icon: '◌', title: 'Pathology testing', copy: 'Accurate diagnostics, from routine blood work to specialist panels.' },
-  { icon: '⌁', title: 'Health screenings', copy: 'Thoughtful preventive checkups designed around your everyday health.' },
-  { icon: '✦', title: 'Home collection', copy: 'A trained phlebotomist comes to you, at a time that suits your day.' },
+  { icon: '◌', title: 'Skin & Hair Care', copy: 'Gentle, natural treatment for Eczema, Psoriasis, Acne, and Hair Loss in Pimple Saudagar.' },
+  { icon: '⌁', title: 'Chronic Disorders', copy: 'Root-cause relief for Thyroid Imbalance, Joint Pain, Arthritis, and Chronic Migraines.' },
+  { icon: '✦', title: 'Women & Child Care', copy: 'Targeted homeopathic solutions for PCOS/PCOD, Menstrual Health, and Pediatric Immunity.' },
 ]
 
 const navItems = ['Home', 'About Us', 'Services', 'Get Appointment', 'Contact Us']
@@ -76,7 +76,7 @@ function App() {
         {screen === 'Staff Dashboard' && currentUser && <StaffDashboard user={currentUser} appointments={appointments} saveAppointments={saveAppointments} logout={() => { setCurrentUser(null); goTo('Home') }} />}
       </main>
 
-      <footer><span>© 2026 Dr. Shelke's Aurum Homeopathic Clinic</span><span>Care that makes clarity possible.</span><button onClick={() => goTo('Contact Us')}>Find our clinic ↗</button></footer>
+      <footer><span>© 2026 Dr. Shelke's Aurum Homeopathic Clinic</span><span>Holistic & Safe Homeopathic Care in Pimple Saudagar, Pune</span><a href="#contact" onClick={(event) => { event.preventDefault(); goTo('Contact Us'); window.location.hash = '#contact'; }}>Find our clinic ↗</a></footer>
     </div>
   )
 }
@@ -113,7 +113,7 @@ function Home({ goTo }) {
       <div className="story-copy"><p className="section-kicker">02 / A calmer kind of care</p><h2>People first.<br /><em>Always.</em></h2><p className="muted">Experience compassionate medical care where every concern is heard, every detail of your health history is valued, and every remedy is chosen for lasting relief.</p><button className="text-btn" onClick={() => goTo('About Us')}>Meet Dr. Jayesh <span>→</span></button></div>
       <div className="story-photo story-photo-main" /><div className="story-photo story-photo-detail" />
     </Reveal>
-    <Reveal className="service-preview page-width"><div className="section-heading"><div><p className="section-kicker">03 / What we do</p><h2>Clarity for every<br /><em>step forward.</em></h2></div><button className="round-arrow" onClick={() => goTo('Services')}>↗</button></div><div className="service-grid">{services.map((service) => <article className="service-card" key={service.title}><span className="service-icon">{service.icon}</span><h3>{service.title}</h3><p>{service.copy}</p><span className="card-arrow">↗</span></article>)}</div></Reveal>
+    <Reveal className="service-preview page-width"><div className="section-heading"><div><p className="section-kicker">03 / OUR SPECIALIZATION IN Pimple saudagar </p><h2>Root-Cause Homeopathic Treatments</h2></div><button className="round-arrow" onClick={() => goTo('Services')}>↗</button></div><div className="service-grid">{services.map((service) => <article className="service-card" key={service.title}><span className="service-icon">{service.icon}</span><h3>{service.title}</h3><p>{service.copy}</p><span className="card-arrow">↗</span></article>)}</div></Reveal>
   </>
 }
 
@@ -137,9 +137,58 @@ function Reveal({ className, children }) {
 
 function Subpage({ eyebrow, title, children }) { return <section className="subpage page-width"><p className="section-kicker">{eyebrow}</p><h1>{title}</h1>{children}</section> }
 
-function About({ goTo }) { return <Subpage eyebrow="About Aurum / 01" title={<>A better standard<br /><em>of care.</em></>}><div className="about-layout"><div className="about-photo" /><div className="about-copy"><p className="lead">We believe good healthcare is equal parts precision and presence.</p><p>Dr. Shelke's Aurum Homeopathic Clinic has grown into a trusted care partner for families seeking thoughtful, personalized homeopathic support. Our team combines compassionate guidance with the kind of attention that helps people feel at ease.</p><div className="stats"><div><strong>25+</strong><small>years of care</small></div><div><strong>40k</strong><small>consultations</small></div><div><strong>98%</strong><small>patient satisfaction</small></div></div><button className="primary-btn" onClick={() => goTo('Get Appointment')}>Meet us for a visit <span>↗</span></button></div></div></Subpage> }
+function About({ goTo }) { return <Subpage eyebrow="02 / ABOUT DR. SHELKE'S AURUM HOMEOPATHY" title={<><span className="title-black">A Better Standard of</span> <span className="title-accent">Natural Care in Pimple Saudagar</span></>}><div className="about-layout"><div className="about-gallery"><figure className="about-photo-card about-photo-main"><img src="/assets/dr.imagre.png" alt="Dr. Jayesh Shelke - Homeopathic Doctor in Pimple Saudagar Pune" /></figure></div><div className="about-copy"><p className="lead">We believe true healing begins with understanding the complete individual.</p><p>Led by Dr. Jayesh Shelke, Aurum Homeopathy provides compassionate, root-cause healing for patients across Pimple Saudagar and Pune. Our practice focuses on thorough constitutional case-taking to deliver safe, personalized, and 100% natural care.</p><div className="stats stats-two"><div><strong>6+</strong><small>Years of Clinical Excellence</small></div><div><strong>98%</strong><small>Patient Satisfaction</small></div></div><a className="primary-btn cta-link" href="#contact" onClick={(event) => { event.preventDefault(); goTo('Contact Us'); window.location.hash = '#contact'; }}>Book a Consultation <span>↗</span></a></div></div></Subpage> }
 
-function Services({ goTo }) { return <Subpage eyebrow="Our services / 02" title={<>Care, made<br /><em>clear.</em></>}><div className="large-service-grid">{services.concat([{ icon: '⌂', title: 'Wellness packages', copy: 'Curated annual plans that make preventive care a simple habit.' }, { icon: '◍', title: 'Doctor consultations', copy: 'Speak with a qualified doctor about your results and next steps.' }]).map((service, index) => <article className="large-service" key={service.title}><span className="service-number">0{index + 1}</span><span className="service-icon">{service.icon}</span><h3>{service.title}</h3><p>{service.copy}</p><button className="text-btn" onClick={() => goTo('Get Appointment')}>Book this service <span>→</span></button></article>)}</div></Subpage> }
+function Services({ goTo }) {
+  const serviceCards = [
+    {
+      title: 'Skin & Hair Care',
+      badge: 'SPECIALTY',
+      description: 'Personalized care for visible skin concerns and long-term scalp health.',
+      conditions: ['Acne & Psoriasis', 'Eczema', 'Hair Loss & Alopecia'],
+    },
+    {
+      title: 'Chronic Diseases',
+      badge: 'SPECIALTY',
+      description: 'Root-cause treatments that support immunity, relief, and sustainable recovery.',
+      conditions: ['Asthma & Allergies', 'Joint & Arthritis Pain', 'Migraine & Sinusitis'],
+    },
+    {
+      title: 'Women’s Health & Hormonal Balance',
+      badge: 'SPECIALTY',
+      description: 'Gentle, hormone-aware treatment plans for feminine wellness and balance.',
+      conditions: ['PCOS / PCOD', 'Menstrual Irregularities', 'Thyroid Care'],
+    },
+    {
+      title: 'Pediatric Care',
+      badge: 'SPECIALTY',
+      description: 'Safe, natural support for children’s immunity, skin health, and common illness patterns.',
+      conditions: ['Immunity Building', 'Recurrent Cold & Cough', 'Pediatric Skin Conditions'],
+    }
+  ]
+
+  return <>
+    <section className="services-page-shell">
+      <div className="services-grid-wrap">
+        <div className="services-grid">
+          {serviceCards.map((service) => (
+            <article className="service-box" key={service.title}>
+              <span className="service-tag">{service.badge}</span>
+              <h3>{service.title}</h3>
+              <p>{service.description}</p>
+              <ul>
+                {service.conditions.map((condition) => (
+                  <li key={condition}>{condition}</li>
+                ))}
+              </ul>
+              <button className="service-btn" onClick={() => goTo('Get Appointment')}>Book Consultation</button>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  </>
+}
 
 function Appointment({ submitted, setSubmitted, addAppointment }) { return <Subpage eyebrow="Get appointment / 03" title={<>Make time for<br /><em>your health.</em></>}><div className="appointment-layout"><div className="appointment-note"><span className="big-icon">✦</span><h2>One small step<br />toward feeling good.</h2><p>Complete the form and our care team will call you within one working hour to confirm your visit.</p><div className="contact-mini"><span>⏱</span><p><strong>Mon – Sat</strong><br />7:00 am – 8:00 pm</p></div></div>{submitted ? <div className="success-box"><span className="success-mark">✓</span><h2>Request received.</h2><p>Your request is saved. Our care team will call you shortly to confirm your appointment.</p><button className="text-btn" onClick={() => setSubmitted(false)}>Send another request <span>→</span></button></div> : <form className="appointment-form" onSubmit={(event) => { event.preventDefault(); addAppointment(Object.fromEntries(new FormData(event.currentTarget))); event.currentTarget.reset() }}><label>Your name<input name="name" required placeholder="e.g. Ananya Sharma" /></label><label>Phone number<input name="phone" required type="tel" placeholder="+91 98765 43210" /></label><label>What do you need?<select name="service" defaultValue="" required><option value="" disabled>Select a service</option><option>Pathology testing</option><option>Health screening</option><option>Home collection</option></select></label><button className="primary-btn" type="submit">Request appointment <span>↗</span></button></form>}</div></Subpage> }
 
@@ -165,7 +214,7 @@ function StaffDashboard({ user, appointments, saveAppointments, logout }) {
   return <Subpage eyebrow={`${user.role} / Incoming appointments`} title={<>Manage<br /><em>requests.</em></>}><div className="dashboard-toolbar"><p>{appointments.length} appointment{appointments.length === 1 ? '' : 's'} received</p><button className="text-btn" onClick={logout}>Sign out <span>↗</span></button></div>{appointments.length === 0 ? <div className="empty-state"><span className="big-icon">✓</span><h2>No incoming appointments.</h2><p>New requests submitted through the public appointment form will appear here.</p></div> : <div className="appointment-list">{appointments.map((appointment) => <article className="appointment-item" key={appointment.id}>{editingId === appointment.id ? <div className="appointment-edit"><input value={editValues.name} onChange={(event) => updateField('name', event.target.value)} aria-label="Patient name" /><input value={editValues.phone} onChange={(event) => updateField('phone', event.target.value)} aria-label="Phone number" /><select value={editValues.service} onChange={(event) => updateField('service', event.target.value)} aria-label="Service"><option>Pathology testing</option><option>Health screening</option><option>Home collection</option></select><select value={editValues.status} onChange={(event) => updateField('status', event.target.value)} aria-label="Status"><option>New</option><option>Confirmed</option><option>Completed</option><option>Cancelled</option></select><button className="primary-btn" onClick={saveEdit}>Save</button><button className="text-btn" onClick={() => setEditingId(null)}>Cancel</button></div> : <><div><span className="appointment-status">{appointment.status}</span><h3>{appointment.name}</h3><p>{appointment.service} · {appointment.phone}</p><small>Received {new Date(appointment.createdAt).toLocaleString()}</small></div>{user.role === 'Super Admin' && <div className="appointment-actions"><button className="text-btn" onClick={() => startEdit(appointment)}>Edit</button><button className="text-btn danger-btn" onClick={() => removeAppointment(appointment.id)}>Delete</button></div>}</>}</article>)}</div>}</Subpage>
 }
 
-function Contact() { return <Subpage eyebrow="Contact us / 04" title={<>Here when you<br /><em>need us.</em></>}><div className="contact-layout"><div className="contact-detail"><p className="lead">Come by for a visit, call us, or send a note. We are happy to help.</p><div className="detail-block"><small>VISIT</small><p>14 Green Park Avenue<br />New Delhi, 110016</p></div><div className="detail-block"><small>CALL</small><p>+91 11 4567 8900<br />hello@aurumhomeopathy.in</p></div></div><div className="map-card"><div className="map-lines" /><span className="map-pin">+</span><div className="map-label"><strong>Dr. Shelke's Aurum</strong><small>14 Green Park Avenue</small></div></div></div></Subpage> }
+function Contact() { return <div id="contact"><Subpage eyebrow="Contact us / 04" title={<>Here when you<br /><em>need us.</em></>}><div className="contact-layout"><div className="contact-detail"><p className="lead">Come by for a visit, call us, or send a note. We are happy to help.</p><div className="detail-block"><small>VISIT</small><p>14 Green Park Avenue<br />New Delhi, 110016</p></div><div className="detail-block"><small>CALL</small><p>+91 11 4567 8900<br />hello@aurumhomeopathy.in</p></div></div><div className="map-card"><div className="map-lines" /><span className="map-pin">+</span><div className="map-label"><strong>Dr. Shelke's Aurum</strong><small>14 Green Park Avenue</small></div></div></div></Subpage></div> }
 
 export default App
 
