@@ -28,10 +28,12 @@ function App() {
   const [submitted, setSubmitted] = useState(false)
   const [appointments, setAppointments] = useState(getAppointments)
   const [currentUser, setCurrentUser] = useState(null)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const goTo = (nextScreen) => {
     setSubmitted(false)
     setScreen(nextScreen)
+    setMobileMenuOpen(false)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -60,11 +62,47 @@ function App() {
         <button className="brand" onClick={() => goTo('Home')} aria-label="Go to home">
           <img className="brand-logo" src="/assets/aurum-logo.png.png" alt="Dr. Shelke's Aurum Homeopathy" />
         </button>
+
         <nav className="desktop-nav" aria-label="Main navigation">
           {navItems.map((item) => <button className={screen === item ? 'active' : ''} onClick={() => goTo(item)} key={item}>{item}</button>)}
         </nav>
-        <div className="header-actions"><button className="staff-link" onClick={() => currentUser ? goTo('Staff Dashboard') : goTo('Staff Login')}>{currentUser ? currentUser.role : 'Staff Login'}</button><button className="header-cta" onClick={() => goTo('Get Appointment')}>Book Appointment <span>↗</span></button></div>
+
+        <div className="header-actions">
+          <button className="staff-link" onClick={() => currentUser ? goTo('Staff Dashboard') : goTo('Staff Login')}>{currentUser ? currentUser.role : 'Staff Login'}</button>
+          <button className="header-cta" onClick={() => goTo('Get Appointment')}>Book Appointment <span>↗</span></button>
+        </div>
+
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+          aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={mobileMenuOpen}
+        >
+          {mobileMenuOpen ? '✕' : '☰'}
+        </button>
       </header>
+
+      <nav className="mobile-quick-links" aria-label="Quick mobile navigation">
+        <button className={screen === 'Home' ? 'active' : ''} onClick={() => goTo('Home')}>Home</button>
+        <button className={screen === 'About Us' ? 'active' : ''} onClick={() => goTo('About Us')}>About Us</button>
+        <button className={screen === 'Services' ? 'active' : ''} onClick={() => goTo('Services')}>Services</button>
+        <button className={screen === 'Get Appointment' ? 'active' : ''} onClick={() => goTo('Get Appointment')}>Appointment</button>
+        <button className={screen === 'Contact Us' ? 'active' : ''} onClick={() => goTo('Contact Us')}>Contact</button>
+      </nav>
+
+      {mobileMenuOpen && (
+        <nav className="mobile-nav" aria-label="Mobile navigation">
+          <button className={screen === 'Home' ? 'active' : ''} onClick={() => goTo('Home')}>Home</button>
+          <button className={screen === 'About Us' ? 'active' : ''} onClick={() => goTo('About Us')}>About Us</button>
+          <button className={screen === 'Services' ? 'active' : ''} onClick={() => goTo('Services')}>Services</button>
+          <button className={screen === 'Get Appointment' ? 'active' : ''} onClick={() => goTo('Get Appointment')}>Get Appointment</button>
+          <button className={screen === 'Contact Us' ? 'active' : ''} onClick={() => goTo('Contact Us')}>Contact Us</button>
+          <button className="mobile-staff-link" onClick={() => currentUser ? goTo('Staff Dashboard') : goTo('Staff Login')}>
+            {currentUser ? currentUser.role : 'Staff Login'}
+          </button>
+          <button className="mobile-cta" onClick={() => goTo('Get Appointment')}>Book Appointment <span>↗</span></button>
+        </nav>
+      )}
 
       <main>
         {screen === 'Home' && <Home goTo={goTo} />}
