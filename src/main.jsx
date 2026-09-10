@@ -80,6 +80,14 @@ function App() {
 
   return (
     <div className="app-shell">
+      <div className="galaxy-bg" aria-hidden="true">
+        <span className="star star-1" />
+        <span className="star star-2" />
+        <span className="star star-3" />
+        <span className="star star-4" />
+        <span className="star star-5" />
+      </div>
+
       <header className="topbar">
         <button className="brand" onClick={() => goTo('Home')} aria-label="Go to home">
           <img className="brand-logo" src="/assets/aurum-logo.png.png" alt="Dr. Shelke's Aurum Homeopathy" />
