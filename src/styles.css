@@ -95,6 +95,35 @@ h1 em, h2 em { color: var(--coral); font-weight: 800; font-style: normal; }
 .service-preview { padding: 95px 0 110px; }.section-heading { display: flex; justify-content: space-between; align-items: end; margin-bottom: 45px; }.section-heading h2 { margin: 13px 0 0; }.round-arrow { border: 1px solid var(--line); border-radius: 50%; background: transparent; width: 48px; height: 48px; font-size: 20px; }.service-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }.service-card { min-height: 230px; background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92)); padding: 27px; position: relative; border: 1px solid rgba(27, 28, 22, 0.06); border-bottom: 3px solid transparent; border-radius: 22px; box-shadow: 0 16px 30px rgba(22, 26, 33, 0.08), 0 4px 12px rgba(190, 16, 16, 0.05); transform: perspective(1000px) rotateX(0deg) rotateY(0deg); transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease; }
 .service-card:hover { border-bottom-color: var(--coral); transform: perspective(1000px) translateY(-8px) rotateX(2deg) rotateY(-3deg); box-shadow: 0 26px 40px rgba(22, 26, 33, 0.12), 0 10px 16px rgba(190, 16, 16, 0.08); }
 .service-icon { font-size: 28px; color: var(--coral); }
+
+.google-reviews-section { padding: 0 0 96px; }
+.google-reviews-shell { background: rgba(255, 255, 255, 0.56); border: 1px solid rgba(30, 41, 59, 0.06); border-radius: 28px; padding: 38px 24px 22px; }
+.google-reviews-header { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 10px; }
+.google-reviews-header h2 { margin: 0; font-size: clamp(32px, 2.2vw, 45px); line-height: 1.1; }
+.google-rating-inline { display: inline-flex; align-items: center; gap: 7px; text-decoration: none; color: var(--ink); background: rgba(255,255,255,0.7); border: 1px solid rgba(190,16,16,0.12); border-radius: 999px; padding: 10px 16px; box-shadow: 0 8px 18px rgba(17, 24, 39, 0.04); }
+.google-star { color: #f4b400; font-size: 18px; line-height: 1; }
+.google-rating-value { font-weight: 800; font-size: 20px; font-family: 'Plus Jakarta Sans', sans-serif; }
+.google-rating-label { color: #5a6f67; font-size: 12px; letter-spacing: 0.02em; }
+.google-reviews-support { margin: 0 0 28px; color: #5a6f67; font-size: 14px; }
+.google-review-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.google-review-card { display: flex; flex-direction: column; height: 100%; min-height: 208px; padding: 22px 18px 16px; border: 1px solid rgba(30, 41, 59, 0.08); border-radius: 18px; background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,244,238,0.95)); text-decoration: none; color: var(--ink); box-shadow: 0 10px 24px rgba(17, 24, 39, 0.04); transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease; }
+.google-review-card:hover { transform: translateY(-3px); box-shadow: 0 16px 28px rgba(17, 24, 39, 0.08); border-color: rgba(190,16,16,0.16); }
+.google-review-stars { font-size: 14px; letter-spacing: 2px; color: #f4b400; margin-bottom: 14px; }
+.google-review-card h3 { margin: 0 0 11px; font-size: 18px; }
+.google-review-card p { margin: 0; color: #5d7a72; font-size: 13px; line-height: 1.7; flex: 1; }
+.google-review-link { display: inline-flex; align-items: center; margin-top: 14px; font-size: 12px; font-weight: 700; color: var(--coral); }
+.google-reviews-cta-wrap { display: flex; justify-content: center; margin-top: 22px; }
+.google-reviews-cta { text-decoration: none; color: var(--ink); font-weight: 800; font-size: 12px; letter-spacing: 0.04em; }
+.google-reviews-cta:hover { color: var(--coral); }
+
+@media (max-width: 800px) {
+  .google-reviews-shell { padding: 24px 16px 18px; border-radius: 22px; }
+  .google-reviews-header { flex-direction: column; align-items: flex-start; }
+  .google-rating-inline { align-self: flex-start; }
+  .google-review-grid { grid-template-columns: 1fr; }
+  .google-review-card { min-height: 180px; }
+}
+
 .service-card h3, .large-service h3 { font: 600 19px 'Plus Jakarta Sans', sans-serif; margin: 32px 0 9px; }
 .service-card p, .large-service p { color: #78968b; font-size: 12px; line-height: 1.65; max-width: 230px; }
 .card-arrow { position: absolute; right: 27px; bottom: 23px; color: var(--coral); }

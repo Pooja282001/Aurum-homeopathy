@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './styles.css'
 
+const GOOGLE_REVIEWS_URL = 'https://maps.app.goo.gl/FbuvhHwrtZFqLMwH7'
+
 const services = [
   { icon: '◌', title: 'Skin & Hair Care', copy: 'Gentle, natural treatment for Eczema, Psoriasis, Acne, and Hair Loss in Pimple Saudagar.' },
   { icon: '⌁', title: 'Chronic Disorders', copy: 'Root-cause relief for Thyroid Imbalance, Joint Pain, Arthritis, and Chronic Migraines.' },
@@ -213,6 +215,49 @@ function Home({ goTo, triggerAppointmentPopup }) {
       <div className="story-photo story-photo-main" /><div className="story-photo story-photo-detail" />
     </Reveal>
     <Reveal className="service-preview page-width"><div className="section-heading"><div><p className="section-kicker">03 / OUR SPECIALIZATION IN Pimple saudagar </p><h2>Root-Cause Homeopathic Treatments</h2></div><button className="round-arrow" onClick={() => goTo('Services')}>↗</button></div><div className="service-grid">{services.map((service) => <article className="service-card" key={service.title}><span className="service-icon">{service.icon}</span><h3>{service.title}</h3><p>{service.copy}</p><span className="card-arrow">↗</span></article>)}</div></Reveal>
+
+    <section className="google-reviews-section page-width" aria-labelledby="google-reviews-heading">
+      <div className="google-reviews-shell">
+        <div className="google-reviews-header">
+          <div>
+            <h2 id="google-reviews-heading">What Our Patients Say</h2>
+          </div>
+          <a className="google-rating-inline" href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" aria-label="4.9 Google Rating - open Google Maps reviews">
+            <span className="google-star">★</span>
+            <span className="google-rating-value">4.9</span>
+            <span className="google-rating-label">Google Rating</span>
+          </a>
+        </div>
+        <p className="google-reviews-support">Trusted by our patients for personalised homeopathic care.</p>
+
+        <div className="google-review-grid">
+          <a className="google-review-card" href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" aria-label="Read review by Krushna Kathar on Google Maps">
+            <div className="google-review-stars">★★★★★</div>
+            <h3>Krushna Kathar</h3>
+            <p>...hai aur Sinusitis ki problem bhi lagbhag khatam ho chuki hai. Dr. Shelke bahut hi calm, patient aur knowledgeable hain. Allergic conditions aur homeopathy ke liye Pimple Saudagar mein ye best clinic hai. Highly re...</p>
+            <span className="google-review-link">Read full review on Google →</span>
+          </a>
+
+          <a className="google-review-card" href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" aria-label="Read review by Aryan Giri on Google Maps">
+            <div className="google-review-stars">★★★★★</div>
+            <h3>Aryan Giri</h3>
+            <p>Dr. Shelke’s Aurum Homeopathy is an excellent clinic for chronic health issues. The doctor is knowledgeable, listens carefully, and provides effective natural treatments. Patients often see good improvement,...</p>
+            <span className="google-review-link">Read full review on Google →</span>
+          </a>
+
+          <a className="google-review-card" href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer" aria-label="Read review by Vishal Yamgar on Google Maps">
+            <div className="google-review-stars">★★★★★</div>
+            <h3>Vishal Yamgar</h3>
+            <p>Very good experience with dr jayesh very knowledgeable doctor I consult him for my acidity indigestion issues continue antacid lena padta tha now having much re...</p>
+            <span className="google-review-link">Read full review on Google →</span>
+          </a>
+        </div>
+
+        <div className="google-reviews-cta-wrap">
+          <a className="google-reviews-cta" href={GOOGLE_REVIEWS_URL} target="_blank" rel="noopener noreferrer">Read More Reviews on Google →</a>
+        </div>
+      </div>
+    </section>
   </>
 }
 
