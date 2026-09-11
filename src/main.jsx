@@ -10,6 +10,7 @@ const services = [
 
 const navItems = ['Home', 'About Us', 'Services', 'Get Appointment', 'Contact Us']
 const APPOINTMENTS_KEY = 'shelkes-aurum-appointments'
+const STAFF_SESSION_KEY = 'shelkes-aurum-staff-user'
 const clinicTimeSlots = [
   '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM',
   '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM'
@@ -27,11 +28,19 @@ function getAppointments() {
   }
 }
 
+function getStoredUser() {
+  try {
+    return JSON.parse(localStorage.getItem(STAFF_SESSION_KEY)) || null
+  } catch {
+    return null
+  }
+}
+
 function App() {
-  const [screen, setScreen] = useState('Home')
+  const [currentUser, setCurrentUser] = useState(getStoredUser)
+  const [screen, setScreen] = useState(currentUser ? 'Staff Dashboard' : 'Home')
   const [submitted, setSubmitted] = useState(false)
   const [appointments, setAppointments] = useState(getAppointments)
-  const [currentUser, setCurrentUser] = useState(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showAppointmentPopup, setShowAppointmentPopup] = useState(false)
   const appointmentRedirectTimerRef = useRef(null)
@@ -56,6 +65,14 @@ function App() {
   }
 
   useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(currentUser))
+    } else {
+      localStorage.removeItem(STAFF_SESSION_KEY)
+    }
+  }, [currentUser])
+
+  useEffect(() => {
     return () => {
       if (appointmentRedirectTimerRef.current) {
         window.clearTimeout(appointmentRedirectTimerRef.current)
@@ -78,6 +95,7 @@ function App() {
     const user = Object.values(STAFF_USERS).find((candidate) => candidate.username === username && candidate.password === password)
     if (!user) return false
     setCurrentUser(user)
+    localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(user))
     goTo('Staff Dashboard')
     return true
   }
@@ -154,7 +172,7 @@ function App() {
         {screen === 'Get Appointment' && <Appointment submitted={submitted} setSubmitted={setSubmitted} addAppointment={addAppointment} />}
         {screen === 'Contact Us' && <Contact />}
         {screen === 'Staff Login' && <StaffLogin login={login} />}
-        {screen === 'Staff Dashboard' && currentUser && <StaffDashboard user={currentUser} appointments={appointments} saveAppointments={saveAppointments} logout={() => { setCurrentUser(null); goTo('Home') }} />}
+        {screen === 'Staff Dashboard' && currentUser && <StaffDashboard user={currentUser} appointments={appointments} saveAppointments={saveAppointments} logout={() => { setCurrentUser(null); localStorage.removeItem(STAFF_SESSION_KEY); goTo('Home') }} />}
       </main>
 
       <footer><span>© 2026 Dr. Shelke's Aurum Homeopathic Clinic</span><span>Holistic & Safe Homeopathic Care in Pimple Saudagar, Pune</span><a href="#contact" onClick={(event) => { event.preventDefault(); goTo('Contact Us'); window.location.hash = '#contact'; }}>Find our clinic ↗</a></footer>
