@@ -94,7 +94,7 @@ function App() {
 
       <header className="topbar">
         <button className="brand" onClick={() => goTo('Home')} aria-label="Go to home">
-          <img className="brand-logo" src="/assets/aurum-logo.png.png" alt="Dr. Shelke's Aurum Homeopathy" />
+          <img className="brand-logo" src="/assets/aurum-logo-transparent.png" alt="Dr. Shelke's Aurum Homeopathy" />
         </button>
 
         <nav className="desktop-nav" aria-label="Main navigation">
@@ -167,10 +167,10 @@ function Home({ goTo, triggerAppointmentPopup }) {
     <Reveal className="hero page-width">
       <div className="hero-copy">
         <p className="eyebrow"><span className="pulse-dot" /> Trusted by 2000+ families</p>
-        <h1>Root-Cause Natural<br /><em>Healing</em></h1>
+        <h1><span className="hero-word-black">Welcome to</span><br /><span className="hero-word-red">Dr. Shelke's Aurum</span><br /><span className="hero-word-black">Homeopathic Clinic</span></h1>
         <p className="hero-text">Holistic Homeopathic Care for Long-Term Healing</p>
         <p className="subheadline">Individualized care tailored to your unique health story. Experience safe, natural, and effective holistic treatment.</p>
-        <div className="hero-actions"><button className="primary-btn" onClick={triggerAppointmentPopup}>Book an appointment <span>↗</span></button><button className="secondary-btn text-btn" onClick={() => goTo('Services')}>Explore services <span>→</span></button></div>
+        <div className="hero-actions"><button className="primary-btn" onClick={triggerAppointmentPopup}>Book an appointment <span>↗</span></button><a className="hero-call-btn" href="tel:+919145692117">Call 9145692117 <span>↗</span></a><button className="secondary-btn text-btn" onClick={() => goTo('Services')}>Explore services <span>→</span></button></div>
         <div className="trust-row"><div className="avatars"><span>R</span><span>M</span><span>S</span></div><p><strong>4.9/5</strong> from 2,000+ patient visits</p></div>
       </div>
       <div className="hero-art">
@@ -226,25 +226,121 @@ function Services({ goTo, triggerAppointmentPopup }) {
       title: 'Skin & Hair Care',
       badge: 'SPECIALTY',
       description: 'Personalized care for visible skin concerns and long-term scalp health.',
-      conditions: ['Acne & Psoriasis', 'Eczema', 'Hair Loss & Alopecia'],
+      conditions: ['Acne / Pimples', 'Eczema', 'Psoriasis', 'Vitiligo', 'Urticaria', 'Fungal Infections', 'Warts', 'Hair Fall', 'Alopecia', 'Dandruff'],
     },
     {
       title: 'Chronic Diseases',
       badge: 'SPECIALTY',
       description: 'Root-cause treatments that support immunity, relief, and sustainable recovery.',
-      conditions: ['Asthma & Allergies', 'Joint & Arthritis Pain', 'Migraine & Sinusitis'],
+      conditions: ['Asthma', 'Allergic Rhinitis', 'Sinusitis', 'Bronchitis', 'Chronic Cough', 'Recurrent Cold & Cough', 'Tonsillitis', 'Dust Allergy'],
     },
     {
-      title: 'Women’s Health & Hormonal Balance',
+      title: 'Women’s Health & PCOS',
       badge: 'SPECIALTY',
       description: 'Gentle, hormone-aware treatment plans for feminine wellness and balance.',
-      conditions: ['PCOS / PCOD', 'Menstrual Irregularities', 'Thyroid Care'],
+      conditions: ['PCOS/PCOD', 'Irregular Periods', 'Painful Periods', 'PMS', 'Menopause', 'Leucorrhea', 'Hormonal complaints'],
     },
     {
-      title: 'Pediatric Care',
+      title: 'Joint, Bone & Arthritis',
+      badge: 'SPECIALTY',
+      description: 'Supportive, non-invasive care for long-standing bone and joint discomfort.',
+      conditions: ['Arthritis', 'Rheumatoid Arthritis', 'Osteoarthritis', 'Knee Pain', 'Back Pain', 'Neck Pain', 'Sciatica', 'Spondylitis', 'Gout'],
+    },
+    {
+      title: 'Migraine, Headache & Vertigo',
+      badge: 'SPECIALTY',
+      description: 'Targeted support for recurring headaches, neurological discomfort, and balance-related issues.',
+      conditions: ['Migraine', 'Headache', 'Tension Headache', 'Vertigo', 'Neuralgia'],
+    },
+    {
+      title: 'Child & Pediatric Care',
       badge: 'SPECIALTY',
       description: 'Safe, natural support for children’s immunity, skin health, and common illness patterns.',
-      conditions: ['Immunity Building', 'Recurrent Cold & Cough', 'Pediatric Skin Conditions'],
+      conditions: ['Recurrent Cold/Cough', 'Allergies', 'Asthma', 'Tonsillitis', 'Adenoids', 'Eczema', 'Digestive problems', 'Bedwetting'],
+    },
+    {
+      title: 'Digestive & Gastrointestinal',
+      badge: 'SPECIALTY',
+      description: 'Holistic support for digestive discomfort, gut imbalance, and daily wellness.',
+      conditions: ['Acidity', 'GERD', 'Gastritis', 'IBS', 'Constipation', 'Gas/Bloating', 'Indigestion', 'Diarrhea'],
+    },
+    {
+      title: 'Piles, Fissure & Anorectal Problems',
+      badge: 'SPECIALTY',
+      description: 'Comfort-focused care for anorectal discomfort and associated bowel issues.',
+      conditions: ['Piles/Hemorrhoids', 'Anal Fissure', 'Fistula-related complaints', 'Constipation-associated complaints'],
+    },
+    {
+      title: 'Thyroid & Hormonal Disorders',
+      badge: 'SPECIALTY',
+      description: 'Personalized care for endocrine balance and daily energy regulation.',
+      conditions: ['Hypothyroidism', 'Hyperthyroidism', 'Thyroid-related complaints', 'Hormonal imbalance'],
+    },
+    {
+      title: 'Weight & Lifestyle Disorders',
+      badge: 'SPECIALTY',
+      description: 'Supportive care for metabolic balance, weight concerns, and active living.',
+      conditions: ['Weight Management', 'Obesity', 'Metabolic concerns', 'Lifestyle-related complaints'],
+    },
+    {
+      title: 'Anxiety, Stress & Sleep',
+      badge: 'SPECIALTY',
+      description: 'Mind-body care designed to calm stress, improve sleep, and restore emotional balance.',
+      conditions: ['Anxiety', 'Stress', 'Insomnia', 'Phobias', 'Exam Stress', 'Emotional concerns'],
+    },
+    {
+      title: 'Men’s Health',
+      badge: 'SPECIALTY',
+      description: 'Confidential, individualized care focused on male wellness and hormonal confidence.',
+      conditions: ['Male Infertility', 'Sexual-health concerns', 'Erectile difficulties', 'Premature Ejaculation', 'Prostate-related complaints'],
+    },
+    {
+      title: 'Kidney & Urinary Problems',
+      badge: 'SPECIALTY',
+      description: 'Support for the urinary tract, kidney health, and recurring discomfort.',
+      conditions: ['Kidney Stones', 'Recurrent UTI symptoms', 'Burning Urination', 'Frequent Urination', 'Bedwetting'],
+    },
+    {
+      title: 'ENT & Throat Problems',
+      badge: 'SPECIALTY',
+      description: 'Relief-oriented treatment for recurring throat, sinus, and ear discomfort.',
+      conditions: ['Tonsillitis', 'Nasal Polyps', 'Sinusitis', 'Ear-related complaints', 'Sore Throat', 'Adenoids'],
+    },
+    {
+      title: 'Hair & Scalp Problems',
+      badge: 'SPECIALTY',
+      description: 'Supportive scalp and hair restoration care for everyday confidence and health.',
+      conditions: ['Hair Fall', 'Alopecia', 'Dandruff', 'Premature Greying', 'Scalp Conditions'],
+    },
+    {
+      title: 'Chronic & Autoimmune Conditions',
+      badge: 'SPECIALTY',
+      description: 'Gentle care for persistent inflammatory and autoimmune patterns affecting daily life.',
+      conditions: ['Chronic Psoriasis', 'Eczema', 'Rheumatoid Arthritis', 'Chronic Allergies', 'Chronic inflammatory complaints'],
+    },
+    {
+      title: 'Female Fertility & Gynecological Care',
+      badge: 'SPECIALTY',
+      description: 'Compassionate wellness care for reproductive health, hormonal balance, and cycles.',
+      conditions: ['Infertility-related concerns', 'Fibroids', 'Ovarian cyst-related concerns', 'Menstrual disorders', 'Menopause'],
+    },
+    {
+      title: 'Child Development & Behavioral Concerns',
+      badge: 'SPECIALTY',
+      description: 'Supportive care for emotional, behavioral, and developmental growth in children.',
+      conditions: ['ADHD', 'Behavioral concerns', 'Learning difficulties', 'Sleep problems', 'Developmental concerns'],
+    },
+    {
+      title: 'Musculoskeletal & Pain Management',
+      badge: 'SPECIALTY',
+      description: 'Personalized relief for joints, muscles, and chronic pain patterns.',
+      conditions: ['Cervical Spondylosis', 'Lumbar Spondylosis', 'Muscle Pain', 'Sports-related pain', 'Stiffness'],
+    },
+    {
+      title: 'General & Chronic Health Conditions',
+      badge: 'SPECIALTY',
+      description: 'Comprehensive care for recurrent illness, low immunity, and lasting constitutional concerns.',
+      conditions: ['Recurrent infections', 'Low immunity concerns', 'Chronic fatigue', 'General constitutional complaints', 'Recurring health problems'],
     }
   ]
 
@@ -271,7 +367,7 @@ function Services({ goTo, triggerAppointmentPopup }) {
   </>
 }
 
-function Appointment({ submitted, setSubmitted, addAppointment }) { return <Subpage eyebrow="Get appointment / 03" title={<>Make time for<br /><em>your health.</em></>}><div className="appointment-layout"><div className="appointment-note"><span className="big-icon">✦</span><h2>One small step<br />toward feeling good.</h2><p>Complete the form and our care team will call you within one working hour to confirm your visit.</p><div className="contact-mini"><span>⏱</span><p><strong>Mon – Sat</strong><br />10:00 am to 2:00 pm, 4:00 pm to 9:00 pm<br /><strong>Sunday</strong><br />11:00 am to 4:00 pm</p></div></div>{submitted ? <div className="success-box"><span className="success-mark">✓</span><h2>Request received.</h2><p>Your request is saved. Our care team will call you shortly to confirm your appointment.</p><button className="text-btn" onClick={() => setSubmitted(false)}>Send another request <span>→</span></button></div> : <form className="appointment-form" onSubmit={(event) => { event.preventDefault(); addAppointment(Object.fromEntries(new FormData(event.currentTarget))); event.currentTarget.reset() }}><label>Your name<input name="name" required placeholder="e.g. Ananya Sharma" /></label><label>Phone number<input name="phone" required type="tel" placeholder="+91 98765 43210" /></label><label>Email ID<input name="email" required type="email" placeholder="you@example.com" /></label><label>Preferred date<input name="date" required type="date" min={new Date().toISOString().split('T')[0]} /></label><label>Preferred time slot<select name="timeSlot" defaultValue="" required><option value="" disabled>Select a time slot</option>{clinicTimeSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}</select></label><button className="primary-btn" type="submit">Request appointment <span>↗</span></button></form>}</div></Subpage> }
+function Appointment({ submitted, setSubmitted, addAppointment }) { return <Subpage eyebrow="Get appointment / 03" title={<>Make time for<br /><em>your health.</em></>}><div className="appointment-layout"><div className="appointment-note"><span className="big-icon">✦</span><h2>One small step<br />toward feeling good.</h2><p>Complete the form and our care team will call you within one working hour to confirm your visit.</p><div className="contact-mini"><span>⏱</span><p><strong>Mon – Sat</strong><br />10:00 am to 2:00 pm, 4:00 pm to 9:00 pm<br /><strong>Sunday</strong><br />11:00 am to 4:00 pm</p></div></div>{submitted ? <div className="success-box"><span className="success-mark">✓</span><h2>Request received.</h2><p>Your request is saved. Our care team will call you shortly to confirm your appointment.</p><button className="text-btn" onClick={() => setSubmitted(false)}>Send another request <span>→</span></button></div> : <form className="appointment-form" onSubmit={(event) => { event.preventDefault(); addAppointment(Object.fromEntries(new FormData(event.currentTarget))); event.currentTarget.reset() }}><label><span className="form-label-text">Your name</span><input name="name" required placeholder="e.g. Ananya Sharma" /></label><label><span className="form-label-text">Phone number</span><input name="phone" required type="tel" placeholder="+91 98765 43210" /></label><label><span className="form-label-text">Email ID</span><input name="email" required type="email" placeholder="you@example.com" /></label><label><span className="form-label-text">Preferred date</span><input name="date" required type="date" min={new Date().toISOString().split('T')[0]} /></label><label><span className="form-label-text">Preferred time slot</span><select name="timeSlot" defaultValue="" required><option value="" disabled>Select a time slot</option>{clinicTimeSlots.map((slot) => <option key={slot} value={slot}>{slot}</option>)}</select></label><button className="primary-btn" type="submit">BOOK APPOINTMENT <span>↗</span></button></form>}</div></Subpage> }
 
 function StaffLogin({ login }) {
   const [error, setError] = useState('')
@@ -295,7 +391,7 @@ function StaffDashboard({ user, appointments, saveAppointments, logout }) {
   return <Subpage eyebrow={`${user.role} / Incoming appointments`} title={<>Manage<br /><em>requests.</em></>}><div className="dashboard-toolbar"><p>{appointments.length} appointment{appointments.length === 1 ? '' : 's'} received</p><button className="text-btn" onClick={logout}>Sign out <span>↗</span></button></div>{appointments.length === 0 ? <div className="empty-state"><span className="big-icon">✓</span><h2>No incoming appointments.</h2><p>New requests submitted through the public appointment form will appear here.</p></div> : <div className="appointment-list">{appointments.map((appointment) => <article className="appointment-item" key={appointment.id}>{editingId === appointment.id ? <div className="appointment-edit"><input value={editValues.name} onChange={(event) => updateField('name', event.target.value)} aria-label="Patient name" /><input value={editValues.phone} onChange={(event) => updateField('phone', event.target.value)} aria-label="Phone number" /><select value={editValues.service} onChange={(event) => updateField('service', event.target.value)} aria-label="Service"><option>Pathology testing</option><option>Health screening</option><option>Home collection</option></select><select value={editValues.status} onChange={(event) => updateField('status', event.target.value)} aria-label="Status"><option>New</option><option>Confirmed</option><option>Completed</option><option>Cancelled</option></select><button className="primary-btn" onClick={saveEdit}>Save</button><button className="text-btn" onClick={() => setEditingId(null)}>Cancel</button></div> : <><div><span className="appointment-status">{appointment.status}</span><h3>{appointment.name}</h3><p>{appointment.service} · {appointment.phone}</p><small>Received {new Date(appointment.createdAt).toLocaleString()}</small></div>{user.role === 'Super Admin' && <div className="appointment-actions"><button className="text-btn" onClick={() => startEdit(appointment)}>Edit</button><button className="text-btn danger-btn" onClick={() => removeAppointment(appointment.id)}>Delete</button></div>}</>}</article>)}</div>}</Subpage>
 }
 
-function Contact() { return <div id="contact"><Subpage eyebrow="Contact us / 04" title={<>Here when you<br /><em>need us.</em></>}><div className="contact-layout"><div className="contact-detail"><p className="lead">Come by for a visit, call us, or send a note. We are happy to help.</p><div className="detail-block"><small>VISIT</small><p>2nd Floor, Vision Gallaria,<br />Kunal Icon Road, Pimple Saudagar,<br />Pimpri-Chinchwad, Pune 411027</p></div><div className="detail-block"><small>CALL</small><p>+91 9145692117<br />aurumhomeopathy4@gmil.com</p></div></div><div className="map-card"><div className="map-lines" /><span className="map-pin">+</span><div className="map-label"><strong>Dr. Shelke's Aurum</strong><small>2nd Floor, Vision Gallaria</small></div></div></div></Subpage></div> }
+function Contact() { return <div id="contact"><Subpage eyebrow="Contact us / 04" title={<>Here when you<br /><em>need us.</em></>}><div className="contact-layout"><div className="contact-detail"><p className="lead">Come by for a visit, call us, or send a note. We are happy to help.</p><div className="detail-block"><small>VISIT</small><p>2nd Floor, Vision Gallaria,<br />Kunal Icon Road, Pimple Saudagar,<br />Pimpri-Chinchwad, Pune 411027</p></div><div className="detail-block"><small>CALL</small><p>+91 9145692117<br />aurumhomeopathy4@gmil.com</p></div><a className="contact-call-btn" href="tel:+919145692117">Call 9145692117 <span>↗</span></a></div><div className="map-card"><div className="map-lines" /><span className="map-pin">+</span><div className="map-label"><strong>Dr. Shelke's Aurum</strong><small>2nd Floor, Vision Gallaria</small></div></div></div></Subpage></div> }
 
 export default App
 
