@@ -22,8 +22,8 @@ const clinicTimeSlots = [
   '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM'
 ]
 const STAFF_USERS = {
-  doctor: { username: 'doctor', password: 'doctor123', role: 'Doctor' },
-  admin: { username: 'admin', password: 'admin123', role: 'Super Admin' },
+  doctor: { username: 'doctor', password: 'doctor123', role: 'doctor' },
+  admin: { username: 'admin', password: 'admin123', role: 'super_admin' },
 }
 
 function getSystemStatusDefault() {
@@ -84,8 +84,12 @@ function App() {
   }, [currentUser])
 
   useEffect(() => {
-    if (!isApiConfigured || !currentUser) return
-    apiRequest('appointments').then((result) => setAppointments(result.appointments || [])).catch(() => {})
+    if (!currentUser) return
+    // Direct database query to backend
+    fetch('http://localhost:3001/appointments')
+      .then((response) => response.ok ? response.json() : Promise.reject('Failed'))
+      .then((result) => setAppointments(result.appointments || result || []))
+      .catch(() => console.warn('⚠️ Could not fetch appointments'))
   }, [currentUser])
 
   useEffect(() => {
@@ -96,15 +100,23 @@ function App() {
     }
   }, [])
 
-  // Fetch system status from API on mount
+  // Fetch system status directly from backend database on mount
   useEffect(() => {
-    if (!isApiConfigured) return
-    apiRequest('system-status').then((result) => {
-      setSystemStatus(result)
-    }).catch(() => {
-      // If API fails, use default (online)
-      setSystemStatus(getSystemStatusDefault())
-    })
+    const fetchSystemStatus = async () => {
+      try {
+        // Direct query to Node.js backend endpoint (uses direct database queries)
+        const response = await fetch('http://localhost:3001/system-status')
+        if (!response.ok) throw new Error('Failed to fetch system status')
+        const result = await response.json()
+        setSystemStatus(result)
+      } catch (error) {
+        console.warn('⚠️ System status fetch failed, using default:', error.message)
+        // Use default (system online) if backend is down
+        setSystemStatus(getSystemStatusDefault())
+      }
+    }
+    
+    fetchSystemStatus()
   }, [])
 
   const saveAppointments = (nextAppointments) => {
@@ -125,10 +137,19 @@ function App() {
         status: 'New'
       }
       
-      if (isApiConfigured) {
-        console.log('📝 Sending to API:', appointmentData)
-        const response = await apiRequest('appointments', { method: 'POST', body: appointmentData })
-        console.log('✅ API Response:', response)
+      // Direct backend database query
+      try {
+        const response = await fetch('http://localhost:3001/appointments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(appointmentData)
+        })
+        if (response.ok) {
+          const result = await response.json()
+          console.log('✅ Backend Response:', result)
+        }
+      } catch (error) {
+        console.warn('⚠️ Backend save failed, saving locally only:', error.message)
       }
       
       // Also save locally for offline support
@@ -144,16 +165,29 @@ function App() {
   }
 
   const login = async (username, password) => {
-    if (isApiConfigured) {
-      try {
-        const result = await apiRequest('login', { method: 'POST', body: { email: username, password } })
+    // Always try backend first (direct database queries)
+    try {
+      const response = await fetch('http://localhost:3001/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: username, password })
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
         setCurrentUser(result.user)
+        localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(result.user))
         goTo('Staff Dashboard')
         return true
-      } catch {
-        return false
+      } else {
+        throw new Error('Login failed')
       }
+    } catch (err) {
+      console.warn('⚠️ Backend login failed, trying local demo users...')
+      // Fall through to try local STAFF_USERS as fallback
     }
+    
+    // Try local demo users as fallback
     const user = Object.values(STAFF_USERS).find((candidate) => candidate.username === username && candidate.password === password)
     if (!user) return false
     setCurrentUser(user)
@@ -163,22 +197,28 @@ function App() {
   }
 
   const updateSystemStatus = (updates) => {
-    if (!isApiConfigured || !currentUser) return
+    if (!currentUser) return
     
     const newStatus = { ...systemStatus, ...updates }
     
-    apiRequest('system-status', {
+    // Direct database query to backend endpoint
+    fetch('http://localhost:3001/system-status', {
       method: 'PUT',
-      body: {
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         isOnline: newStatus.isOnline,
         maintenanceMode: newStatus.maintenanceMode,
         comment: newStatus.comment || '',
         userId: currentUser.id
+      })
+    }).then((response) => {
+      if (response.ok) {
+        setSystemStatus(newStatus)
+      } else {
+        console.error('Failed to update system status')
       }
-    }).then(() => {
-      setSystemStatus(newStatus)
     }).catch((error) => {
-      console.error('Error updating system status:', error)
+      console.error('❌ Error updating system status:', error.message)
     })
   }
 
@@ -555,71 +595,77 @@ function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logo
 
   // Load users if Super Admin
   useEffect(() => {
-    if (user.role === 'super_admin' && apiEnabled) {
-      apiRequest('users').then(result => {
-        setUsers(result.users || [])
-      }).catch(err => console.error('Failed to load users:', err))
+    if (user.role === 'super_admin') {
+      fetch('http://localhost:3001/users')
+        .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch users'))
+        .then(result => setUsers(result.users || result || []))
+        .catch(err => console.warn('⚠️ Failed to load users:', err))
     }
-  }, [user, apiEnabled])
+  }, [user])
 
   const startEdit = (appointment) => { setEditingId(appointment.id); setEditValues({ ...appointment }) }
   const updateField = (field, value) => setEditValues((current) => ({ ...current, [field]: value }))
   
   const saveEdit = async () => { 
     try {
-      if (apiEnabled) {
-        await apiRequest(`appointments/${editingId}`, { 
-          method: 'PUT', 
-          body: { status: editValues.status, date: editValues.date, time_slot: editValues.time_slot, name: editValues.name, phone: editValues.phone, service: editValues.service }
-        })
-      }
+      // Direct database query to update appointment
+      await fetch(`http://localhost:3001/appointments/${editingId}`, { 
+        method: 'PUT', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: editValues.status, date: editValues.date, time_slot: editValues.time_slot, name: editValues.name, phone: editValues.phone, service: editValues.service })
+      })
       saveAppointments(appointments.map((apt) => apt.id === editingId ? { ...editValues } : apt))
-      setMessage('Appointment updated successfully!')
+      setMessage('✅ Appointment updated successfully!')
       setTimeout(() => setMessage(''), 2000)
     } catch (err) {
-      console.error('Error updating appointment:', err)
+      console.error('❌ Error updating appointment:', err)
+      setMessage('Error updating appointment')
     }
     setEditingId(null) 
   }
   
   const removeAppointment = async (id) => { 
     try {
-      if (apiEnabled) await apiRequest(`appointments/${id}`, { method: 'DELETE' })
+      // Direct database query to delete appointment
+      await fetch(`http://localhost:3001/appointments/${id}`, { method: 'DELETE' })
       saveAppointments(appointments.filter((apt) => apt.id !== id))
-      setMessage('Appointment deleted successfully!')
+      setMessage('✅ Appointment deleted successfully!')
       setTimeout(() => setMessage(''), 2000)
     } catch (err) {
-      console.error('Error deleting appointment:', err)
+      console.error('❌ Error deleting appointment:', err)
+      setMessage('Error deleting appointment')
     }
   }
   
   const deleteUser = async (id) => {
     if (!confirm('Are you sure you want to delete this user?')) return
     try {
-      if (apiEnabled) await apiRequest(`users/${id}`, { method: 'DELETE' })
+      // Direct database query to delete user
+      await fetch(`http://localhost:3001/users/${id}`, { method: 'DELETE' })
       setUsers(users.filter(u => u.id !== id))
-      setMessage('User deleted successfully!')
+      setMessage('✅ User deleted successfully!')
       setTimeout(() => setMessage(''), 2000)
     } catch (err) {
-      console.error('Error deleting user:', err)
+      console.error('❌ Error deleting user:', err)
+      setMessage('Error deleting user')
     }
   }
   
   const updateUser = async (id) => {
     try {
-      if (apiEnabled) {
-        await apiRequest(`users/${id}`, {
-          method: 'PUT',
-          body: {
-            name: editUserValues.name,
-            email: editUserValues.email,
-            role: editUserValues.role,
-            ...(editUserValues.password && { password: editUserValues.password })
-          }
+      // Direct database query to update user
+      await fetch(`http://localhost:3001/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editUserValues.name,
+          email: editUserValues.email,
+          role: editUserValues.role,
+          ...(editUserValues.password && { password: editUserValues.password })
         })
-      }
+      })
       setUsers(users.map(u => u.id === id ? { ...u, ...editUserValues } : u))
-      setMessage('User updated successfully!')
+      setMessage('✅ User updated successfully!')
       setTimeout(() => setMessage(''), 2000)
       setEditingUserId(null)
     } catch (err) {
@@ -702,33 +748,35 @@ function ManageUsers({ users: initialUsers, goTo, apiEnabled }) {
   const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
-    if (apiEnabled) {
-      apiRequest('users').then(result => setUsers(result.users || [])).catch(err => console.error('Error:', err))
-    }
-  }, [apiEnabled])
+    // Direct database query to fetch all users
+    fetch('http://localhost:3001/users')
+      .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch'))
+      .then(result => setUsers(result.users || result || []))
+      .catch(err => console.warn('⚠️ Failed to load users:', err))
+  }, [])
 
   const startEdit = (user) => { setEditingId(user.id); setEditValues({ ...user }) }
   const updateField = (field, value) => setEditValues(prev => ({ ...prev, [field]: value }))
   
   const saveEdit = async () => {
     try {
-      if (apiEnabled) {
-        await apiRequest(`users/${editingId}`, {
-          method: 'PUT',
-          body: {
-            name: editValues.name,
-            email: editValues.email,
-            role: editValues.role,
-            ...(editValues.password && { password: editValues.password })
-          }
+      // Direct database query to update user
+      await fetch(`http://localhost:3001/users/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editValues.name,
+          email: editValues.email,
+          role: editValues.role,
+          ...(editValues.password && { password: editValues.password })
         })
-      }
+      })
       setUsers(users.map(u => u.id === editingId ? { ...u, ...editValues } : u))
-      setMessage('User updated successfully!')
+      setMessage('✅ User updated successfully!')
       setTimeout(() => setMessage(''), 2000)
       setEditingId(null)
     } catch (err) {
-      setMessage('Error updating user: ' + err.message)
+      setMessage('❌ Error updating user: ' + err.message)
       setTimeout(() => setMessage(''), 2000)
     }
   }
@@ -736,12 +784,13 @@ function ManageUsers({ users: initialUsers, goTo, apiEnabled }) {
   const deleteUser = async (id) => {
     if (!confirm('Delete this user?')) return
     try {
-      if (apiEnabled) await apiRequest(`users/${id}`, { method: 'DELETE' })
+      // Direct database query to delete user
+      await fetch(`http://localhost:3001/users/${id}`, { method: 'DELETE' })
       setUsers(users.filter(u => u.id !== id))
-      setMessage('User deleted!')
+      setMessage('✅ User deleted!')
       setTimeout(() => setMessage(''), 2000)
     } catch (err) {
-      setMessage('Error: ' + err.message)
+      setMessage('❌ Error: ' + err.message)
     }
   }
 
@@ -828,11 +877,15 @@ function CreateUser({ goTo }) {
       return
     }
     try {
-      const result = await apiRequest('register', {
+      // Direct database query to create user
+      const response = await fetch('http://localhost:3001/register', {
         method: 'POST',
-        body: { name, email, password, role }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password, role })
       })
-      setMessage(`User ${name} created successfully with role: ${role}`)
+      if (!response.ok) throw new Error('Failed to create user')
+      const result = await response.json()
+      setMessage(`✅ User ${name} created successfully with role: ${role}`)
       setName('')
       setEmail('')
       setPassword('')
@@ -910,14 +963,13 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
   const [passwordValue, setPasswordValue] = useState('')
   const [offlineComment, setOfflineComment] = useState(systemStatus?.comment || 'System is under maintenance')
 
-  // Load users
+  // Load users - Direct database query
   useEffect(() => {
-    if (apiEnabled) {
-      apiRequest('users').then(result => {
-        setUsers(result.users || [])
-      }).catch(err => console.error('Failed to load users:', err))
-    }
-  }, [apiEnabled])
+    fetch('http://localhost:3001/users')
+      .then(response => response.ok ? response.json() : Promise.reject('Failed'))
+      .then(result => setUsers(result.users || result || []))
+      .catch(err => console.warn('⚠️ Failed to load users:', err))
+  }, [])
 
   const toggleOnline = () => {
     updateSystemStatus({ isOnline: !systemStatus.isOnline })
@@ -940,88 +992,89 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
       return
     }
     try {
-      if (apiEnabled) {
-        await apiRequest('appointments', {
-          method: 'POST',
-          body: newAppointment
-        })
-      }
+      // Direct database query to create appointment
+      await fetch('http://localhost:3001/appointments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAppointment)
+      })
       const apt = { id: Date.now(), status: 'New', ...newAppointment }
       saveAppointments([...appointments, apt])
       setNewAppointment({ name: '', email: '', phone: '', service: 'General consultation', date: '', time_slot: '' })
       setNewAppointmentForm(false)
-      setMessage('Appointment created successfully!')
+      setMessage('✅ Appointment created successfully!')
       setTimeout(() => setMessage(''), 2000)
     } catch (err) {
-      setMessage('Failed to create appointment')
+      setMessage('❌ Failed to create appointment')
     }
   }
 
   const updateAppointment = async (id) => {
     try {
-      if (apiEnabled) {
-        await apiRequest(`appointments/${id}`, {
-          method: 'PUT',
-          body: editValues
-        })
-      }
+      // Direct database query to update appointment
+      await fetch(`http://localhost:3001/appointments/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editValues)
+      })
       saveAppointments(appointments.map(apt => apt.id === id ? editValues : apt))
-      setMessage('Appointment updated!')
+      setMessage('✅ Appointment updated!')
       setTimeout(() => setMessage(''), 2000)
       setEditingId(null)
     } catch (err) {
-      setMessage('Failed to update appointment')
+      setMessage('❌ Failed to update appointment')
     }
   }
 
   const deleteAppointment = async (id) => {
     if (!confirm('Delete this appointment?')) return
     try {
-      if (apiEnabled) await apiRequest(`appointments/${id}`, { method: 'DELETE' })
+      // Direct database query to delete appointment
+      await fetch(`http://localhost:3001/appointments/${id}`, { method: 'DELETE' })
       saveAppointments(appointments.filter(apt => apt.id !== id))
-      setMessage('Appointment deleted!')
+      setMessage('✅ Appointment deleted!')
       setTimeout(() => setMessage(''), 2000)
     } catch (err) {
-      setMessage('Failed to delete appointment')
+      setMessage('❌ Failed to delete appointment')
     }
   }
 
   const disableUser = async (id) => {
     if (!confirm('Disable this user? They will not be able to login.')) return
     try {
-      if (apiEnabled) {
-        await apiRequest(`users/${id}`, {
-          method: 'PUT',
-          body: { active: false }
-        })
-      }
+      // Direct database query to disable user
+      await fetch(`http://localhost:3001/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: false })
+      })
       setUsers(users.filter(u => u.id !== id))
-      setMessage('User disabled!')
+      setMessage('✅ User disabled!')
       setTimeout(() => setMessage(''), 2000)
     } catch (err) {
-      setMessage('Failed to disable user')
+      setMessage('❌ Failed to disable user')
     }
   }
 
   const updateUser = async (id) => {
     try {
-      if (apiEnabled) {
-        await apiRequest(`users/${id}`, {
-          method: 'PUT',
-          body: {
-            name: editValues.name,
-            email: editValues.email,
-            role: editValues.role,
-            ...(editValues.password && { password: editValues.password })
-          }
+      // Direct database query to update user
+      await fetch(`http://localhost:3001/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editValues.name,
+          email: editValues.email,
+          role: editValues.role,
+          ...(editValues.password && { password: editValues.password })
         })
-      }
+      })
       setUsers(users.map(u => u.id === id ? editValues : u))
-      setMessage('User updated!')
+      setMessage('✅ User updated!')
       setTimeout(() => setMessage(''), 2000)
       setEditingId(null)
     } catch (err) {
-      setMessage('Failed to update user')
+      setMessage('❌ Failed to update user')
     }
   }
 
@@ -1032,30 +1085,31 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
       return
     }
     try {
-      if (apiEnabled) {
-        await apiRequest(`users/${id}`, {
-          method: 'PUT',
-          body: { password: newPassword }
-        })
-      }
+      // Direct database query to update password
+      await fetch(`http://localhost:3001/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: newPassword })
+      })
       setMessage('✅ Password updated successfully!')
       setTimeout(() => setMessage(''), 2000)
       setShowPasswordField(null)
       setPasswordValue('')
     } catch (err) {
-      setMessage('Failed to update password')
+      setMessage('❌ Failed to update password')
     }
   }
 
   const deleteUser = async (id) => {
     if (!confirm('Permanently delete this user?')) return
     try {
-      if (apiEnabled) await apiRequest(`users/${id}`, { method: 'DELETE' })
+      // Direct database query to delete user
+      await fetch(`http://localhost:3001/users/${id}`, { method: 'DELETE' })
       setUsers(users.filter(u => u.id !== id))
-      setMessage('User deleted!')
+      setMessage('✅ User deleted!')
       setTimeout(() => setMessage(''), 2000)
     } catch (err) {
-      setMessage('Failed to delete user')
+      setMessage('❌ Failed to delete user')
     }
   }
 

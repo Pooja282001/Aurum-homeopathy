@@ -186,6 +186,46 @@ app.get('/health', async (req, res) => {
   }
 });
 
+// Diagnostic endpoint - Check system status and users
+app.get('/diagnose', async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    
+    // Get system status
+    const [systemStatus] = await conn.execute('SELECT * FROM system_status WHERE id = 1');
+    
+    // Get all users with roles
+    const [users] = await conn.execute(`
+      SELECT u.id, u.username, u.email, u.name,
+             GROUP_CONCAT(r.name SEPARATOR ', ') as roles
+      FROM users u
+      LEFT JOIN user_roles ur ON u.id = ur.user_id
+      LEFT JOIN roles r ON ur.role_id = r.id
+      GROUP BY u.id
+      LIMIT 20
+    `);
+    
+    // Get available roles
+    const [roles] = await conn.execute('SELECT id, name, description FROM roles');
+    
+    conn.release();
+    
+    res.json({
+      system_status: systemStatus.length > 0 ? {
+        is_online: systemStatus[0].is_online === 1,
+        maintenance_mode: systemStatus[0].maintenance_mode === 1,
+        comment: systemStatus[0].comment,
+        last_updated: systemStatus[0].last_updated
+      } : 'NO_RECORD',
+      users: users,
+      roles: roles,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Diagnosis failed', message: error.message });
+  }
+});
+
 // Get all users
 app.get('/users', async (req, res) => {
   try {
@@ -940,6 +980,7 @@ initializeRBAC().then(() => {
    ADMIN/DATA:
    [OK] GET  /admin/data          - Get all users & appointments
    [OK] GET  /health              - Check server status
+   [OK] GET  /diagnose            - Check system status, users, roles
 
 [DATABASE] u154384799_Ahc @ srv1752.hstgr.io
 
