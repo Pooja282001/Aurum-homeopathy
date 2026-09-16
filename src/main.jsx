@@ -31,18 +31,25 @@ function getApiBaseUrl() {
   const hostname = window.location.hostname
   const protocol = window.location.protocol
   
+  console.log('🔍 [getApiBaseUrl] Hostname:', hostname, 'Protocol:', protocol)
+  
   // Use environment variable if available, otherwise construct from current host
   if (import.meta.env.VITE_API_BASE_URL && !hostname.includes('localhost')) {
+    console.log('✅ [getApiBaseUrl] Using VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
     return import.meta.env.VITE_API_BASE_URL
   }
   
   // For localhost, mobile on same network, or any other host
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:3001'
+    const url = 'http://localhost:3001'
+    console.log('✅ [getApiBaseUrl] Using localhost:', url)
+    return url
   }
   
   // For access from mobile/tablet/other devices on same network
-  return `${protocol}//${hostname}:3001`
+  const url = `${protocol}//${hostname}:3001`
+  console.log('✅ [getApiBaseUrl] Using dynamic URL:', url)
+  return url
 }
 
 function getSystemStatusDefault() {
@@ -184,12 +191,17 @@ function App() {
   }
 
   const login = async (username, password) => {
+    console.log('🔐 [LOGIN] Attempting login with username:', username)
+    
     // Always try backend first (direct database queries)
     try {
+      const apiUrl = getApiBaseUrl() + '/login'
+      console.log('📤 [LOGIN] Sending POST request to:', apiUrl)
+      
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
       
-      const response = await fetch(getApiBaseUrl() + '/login', {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: username, password }),
@@ -198,25 +210,36 @@ function App() {
       
       clearTimeout(timeoutId)
       
+      console.log('📥 [LOGIN] Response status:', response.status, response.statusText)
+      
       if (response.ok) {
         const result = await response.json()
+        console.log('✅ [LOGIN] Login successful! User:', result.user)
         setCurrentUser(result.user)
         localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(result.user))
         localStorage.setItem('backendAvailable', 'true')
+        console.log('💾 [LOGIN] User saved to localStorage')
         goTo('Staff Dashboard')
         return true
+      } else {
+        const errorText = await response.text()
+        console.warn('❌ [LOGIN] Response not OK. Status:', response.status, 'Body:', errorText)
       }
     } catch (err) {
-      console.warn('⚠️ Backend unavailable, using local demo users')
+      console.error('❌ [LOGIN] Backend error:', err.message, err.stack)
+      console.warn('⚠️ [LOGIN] Backend unavailable, using local demo users')
       localStorage.setItem('backendAvailable', 'false')
     }
     
     // Fallback to local demo users when backend unavailable
+    console.log('🔄 [LOGIN] Trying local demo users...')
     const user = Object.values(STAFF_USERS).find((candidate) => candidate.username === username && candidate.password === password)
     if (!user) {
+      console.error('❌ [LOGIN] Invalid credentials - user not found')
       alert('❌ Invalid credentials.\n\nTry demo credentials:\nUsername: demo\nPassword: demo123\n\nOr:\nUsername: admin\nPassword: admin123')
       return false
     }
+    console.log('✅ [LOGIN] Using demo user:', user)
     setCurrentUser(user)
     localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(user))
     localStorage.setItem('backendAvailable', 'false')
@@ -782,34 +805,71 @@ function ManageUsers({ users: initialUsers, goTo, apiEnabled }) {
   const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
+    console.log('📝 [ManageUsers] Component mounted, fetching users...')
     // Direct database query to fetch all users
-    fetch(getApiBaseUrl() + '/users')
-      .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch'))
-      .then(result => setUsers(result.users || result || []))
-      .catch(err => console.warn('⚠️ Failed to load users:', err))
+    const apiUrl = getApiBaseUrl() + '/users'
+    console.log('📤 [ManageUsers] GET request to:', apiUrl)
+    
+    fetch(apiUrl)
+      .then(response => {
+        console.log('📥 [ManageUsers] Response status:', response.status)
+        return response.ok ? response.json() : Promise.reject('Failed to fetch: ' + response.status)
+      })
+      .then(result => {
+        console.log('✅ [ManageUsers] Users received:', result)
+        const userList = result.users || result || []
+        console.log('📋 [ManageUsers] Setting users state with', userList.length, 'users')
+        setUsers(userList)
+      })
+      .catch(err => {
+        console.error('❌ [ManageUsers] Error loading users:', err)
+        console.warn('⚠️ [ManageUsers] Could not load users from backend')
+      })
   }, [])
 
   const startEdit = (user) => { setEditingId(user.id); setEditValues({ ...user }) }
   const updateField = (field, value) => setEditValues(prev => ({ ...prev, [field]: value }))
   
   const saveEdit = async () => {
+    console.log('💾 [SaveEdit] Saving user ID:', editingId)
+    console.log('📝 [SaveEdit] Updated values:', editValues)
     try {
-      // Direct database query to update user
-      await fetch(`${getApiBaseUrl()}/users/${editingId}`, {
+      const apiUrl = `${getApiBaseUrl()}/users/${editingId}`
+      console.log('📤 [SaveEdit] PUT request to:', apiUrl)
+      
+      const payload = {
+        name: editValues.name,
+        email: editValues.email,
+        role: editValues.role,
+        ...(editValues.password && { password: editValues.password })
+      }
+      console.log('📋 [SaveEdit] Payload:', payload)
+      
+      const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: editValues.name,
-          email: editValues.email,
-          role: editValues.role,
-          ...(editValues.password && { password: editValues.password })
-        })
+        body: JSON.stringify(payload)
       })
+      
+      console.log('📥 [SaveEdit] Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorBody = await response.text()
+        console.error('❌ [SaveEdit] Server error:', errorBody)
+        throw new Error('Server error: ' + response.status)
+      }
+      
+      const result = await response.json()
+      console.log('✅ [SaveEdit] Update successful:', result)
+      
       setUsers(users.map(u => u.id === editingId ? { ...u, ...editValues } : u))
+      console.log('📋 [SaveEdit] Updated users state')
+      
       setMessage('✅ User updated successfully!')
       setTimeout(() => setMessage(''), 2000)
       setEditingId(null)
     } catch (err) {
+      console.error('❌ [SaveEdit] Error updating user:', err.message, err)
       setMessage('❌ Error updating user: ' + err.message)
       setTimeout(() => setMessage(''), 2000)
     }
@@ -817,13 +877,31 @@ function ManageUsers({ users: initialUsers, goTo, apiEnabled }) {
   
   const deleteUser = async (id) => {
     if (!confirm('Delete this user?')) return
+    console.log('🗑️ [DeleteUser] Deleting user ID:', id)
     try {
-      // Direct database query to delete user
-      await fetch(`${getApiBaseUrl()}/users/${id}`, { method: 'DELETE' })
+      const apiUrl = `${getApiBaseUrl()}/users/${id}`
+      console.log('📤 [DeleteUser] DELETE request to:', apiUrl)
+      
+      const response = await fetch(apiUrl, { method: 'DELETE' })
+      
+      console.log('📥 [DeleteUser] Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorBody = await response.text()
+        console.error('❌ [DeleteUser] Server error:', errorBody)
+        throw new Error('Server error: ' + response.status)
+      }
+      
+      const result = await response.json()
+      console.log('✅ [DeleteUser] Delete successful:', result)
+      
       setUsers(users.filter(u => u.id !== id))
+      console.log('📋 [DeleteUser] Updated users state, user removed')
+      
       setMessage('✅ User deleted!')
       setTimeout(() => setMessage(''), 2000)
     } catch (err) {
+      console.error('❌ [DeleteUser] Error deleting user:', err.message, err)
       setMessage('❌ Error: ' + err.message)
     }
   }
