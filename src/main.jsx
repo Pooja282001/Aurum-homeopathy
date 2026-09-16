@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import { apiRequest, isApiConfigured } from './api'
 import './styles.css'
 
 const GOOGLE_REVIEWS_URL = 'https://maps.app.goo.gl/FbuvhHwrtZFqLMwH7'
@@ -75,6 +76,11 @@ function App() {
   }, [currentUser])
 
   useEffect(() => {
+    if (!isApiConfigured || !currentUser) return
+    apiRequest('appointments').then((result) => setAppointments(result.appointments || [])).catch(() => {})
+  }, [currentUser])
+
+  useEffect(() => {
     return () => {
       if (appointmentRedirectTimerRef.current) {
         window.clearTimeout(appointmentRedirectTimerRef.current)
@@ -87,13 +93,31 @@ function App() {
     localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(nextAppointments))
   }
 
-  const addAppointment = (details) => {
+  const addAppointment = async (details) => {
+    if (isApiConfigured) {
+      try {
+        await apiRequest('appointments', { method: 'POST', body: details })
+      } catch {
+        return false
+      }
+    }
     const appointment = { ...details, id: Date.now(), createdAt: new Date().toISOString(), status: 'New' }
-    saveAppointments([appointment, ...appointments])
+    if (!isApiConfigured) saveAppointments([appointment, ...appointments])
     setSubmitted(true)
+    return true
   }
 
-  const login = (username, password) => {
+  const login = async (username, password) => {
+    if (isApiConfigured) {
+      try {
+        const result = await apiRequest('login', { method: 'POST', body: { email: username, password } })
+        setCurrentUser(result.user)
+        goTo('Staff Dashboard')
+        return true
+      } catch {
+        return false
+      }
+    }
     const user = Object.values(STAFF_USERS).find((candidate) => candidate.username === username && candidate.password === password)
     if (!user) return false
     setCurrentUser(user)
@@ -174,7 +198,7 @@ function App() {
         {screen === 'Get Appointment' && <Appointment submitted={submitted} setSubmitted={setSubmitted} addAppointment={addAppointment} />}
         {screen === 'Contact Us' && <Contact />}
         {screen === 'Staff Login' && <StaffLogin login={login} />}
-        {screen === 'Staff Dashboard' && currentUser && <StaffDashboard user={currentUser} appointments={appointments} saveAppointments={saveAppointments} logout={() => { setCurrentUser(null); localStorage.removeItem(STAFF_SESSION_KEY); goTo('Home') }} />}
+        {screen === 'Staff Dashboard' && currentUser && <StaffDashboard user={currentUser} appointments={appointments} saveAppointments={saveAppointments} apiEnabled={isApiConfigured} logout={() => { setCurrentUser(null); localStorage.removeItem(STAFF_SESSION_KEY); goTo('Home') }} />}
       </main>
 
       <footer><span>© 2026 Dr. Shelke's Aurum Homeopathic Clinic</span><span>Holistic & Safe Homeopathic Care in Pimple Saudagar, Pune</span><a href="#contact" onClick={(event) => { event.preventDefault(); goTo('Contact Us'); window.location.hash = '#contact'; }}>Find our clinic ↗</a></footer>
@@ -434,22 +458,23 @@ function Appointment({ submitted, setSubmitted, addAppointment }) { return <Subp
 
 function StaffLogin({ login }) {
   const [error, setError] = useState('')
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault()
     const values = Object.fromEntries(new FormData(event.currentTarget))
-    if (!login(values.username, values.password)) setError('Invalid staff username or password.')
+    if (!await login(values.username, values.password)) setError('Invalid staff email or password.')
   }
 
-  return <Subpage eyebrow="Staff access / Secure login" title={<>Care team<br /><em>portal.</em></>}><div className="login-layout"><form className="staff-login" onSubmit={submit}><label>Username<input name="username" required autoComplete="username" /></label><label>Password<input name="password" type="password" required autoComplete="current-password" /></label>{error && <p className="form-error">{error}</p>}<button className="primary-btn" type="submit">Sign in <span>↗</span></button></form><div className="login-info"><span className="big-icon">✦</span><h2>One place for incoming appointments.</h2><p>Doctors can review requests. Super admins can update or remove them.</p><p className="demo-credentials"><strong>Doctor:</strong> doctor / doctor123<br /><strong>Super Admin:</strong> admin / admin123</p></div></div></Subpage>
+  return <Subpage eyebrow="Staff access / Secure login" title={<>Care team<br /><em>portal.</em></>}><div className="login-layout"><form className="staff-login" onSubmit={submit}><label>Email<input name="username" type="email" required autoComplete="username" /></label><label>Password<input name="password" type="password" required autoComplete="current-password" /></label>{error && <p className="form-error">{error}</p>}<button className="primary-btn" type="submit">Sign in <span>↗</span></button></form><div className="login-info"><span className="big-icon">✦</span><h2>One place for incoming appointments.</h2><p>Doctors can review requests. Super admins can update or remove them.</p><p className="demo-credentials"><strong>Local demo:</strong> doctor / doctor123<br /><strong>Hostinger:</strong> use a user created in the users table</p></div></div></Subpage>
 }
 
-function StaffDashboard({ user, appointments, saveAppointments, logout }) {
+function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logout }) {
   const [editingId, setEditingId] = useState(null)
   const [editValues, setEditValues] = useState({})
   const startEdit = (appointment) => { setEditingId(appointment.id); setEditValues(appointment) }
   const updateField = (field, value) => setEditValues((current) => ({ ...current, [field]: value }))
-  const saveEdit = () => { saveAppointments(appointments.map((appointment) => appointment.id === editingId ? { ...editValues, updatedAt: new Date().toISOString() } : appointment)); setEditingId(null) }
-  const removeAppointment = (id) => saveAppointments(appointments.filter((appointment) => appointment.id !== id))
+  const saveEdit = async () => { if (apiEnabled) await apiRequest(`appointments/${editingId}`, { method: 'PATCH', body: { name: editValues.name, phone: editValues.phone, status: editValues.status, date: editValues.date, timeSlot: editValues.timeSlot } }); saveAppointments(appointments.map((appointment) => appointment.id === editingId ? { ...editValues, updatedAt: new Date().toISOString() } : appointment)); setEditingId(null) }
+  const removeAppointment = async (id) => { if (apiEnabled) await apiRequest(`appointments/${id}`, { method: 'DELETE' }); saveAppointments(appointments.filter((appointment) => appointment.id !== id)) }
+  const canManage = user.role === 'Super Admin' || user.role === 'admin'
 
   return <Subpage eyebrow={`${user.role} / Incoming appointments`} title={<>Manage<br /><em>requests.</em></>}><div className="dashboard-toolbar"><p>{appointments.length} appointment{appointments.length === 1 ? '' : 's'} received</p><button className="text-btn" onClick={logout}>Sign out <span>↗</span></button></div>{appointments.length === 0 ? <div className="empty-state"><span className="big-icon">✓</span><h2>No incoming appointments.</h2><p>New requests submitted through the public appointment form will appear here.</p></div> : <div className="appointment-list">{appointments.map((appointment) => <article className="appointment-item" key={appointment.id}>{editingId === appointment.id ? <div className="appointment-edit"><input value={editValues.name} onChange={(event) => updateField('name', event.target.value)} aria-label="Patient name" /><input value={editValues.phone} onChange={(event) => updateField('phone', event.target.value)} aria-label="Phone number" /><select value={editValues.service} onChange={(event) => updateField('service', event.target.value)} aria-label="Service"><option>Pathology testing</option><option>Health screening</option><option>Home collection</option></select><select value={editValues.status} onChange={(event) => updateField('status', event.target.value)} aria-label="Status"><option>New</option><option>Confirmed</option><option>Completed</option><option>Cancelled</option></select><button className="primary-btn" onClick={saveEdit}>Save</button><button className="text-btn" onClick={() => setEditingId(null)}>Cancel</button></div> : <><div><span className="appointment-status">{appointment.status}</span><h3>{appointment.name}</h3><p>{appointment.service} · {appointment.phone}</p><small>Received {new Date(appointment.createdAt).toLocaleString()}</small></div>{user.role === 'Super Admin' && <div className="appointment-actions"><button className="text-btn" onClick={() => startEdit(appointment)}>Edit</button><button className="text-btn danger-btn" onClick={() => removeAppointment(appointment.id)}>Delete</button></div>}</>}</article>)}</div>}</Subpage>
 }
