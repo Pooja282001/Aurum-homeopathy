@@ -26,6 +26,25 @@ const STAFF_USERS = {
   admin: { username: 'admin', password: 'admin123', role: 'super_admin' },
 }
 
+// Get dynamic API base URL - works on localhost, mobile, tablets, and different networks
+function getApiBaseUrl() {
+  const hostname = window.location.hostname
+  const protocol = window.location.protocol
+  
+  // Use environment variable if available, otherwise construct from current host
+  if (import.meta.env.VITE_API_BASE_URL && !hostname.includes('localhost')) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  
+  // For localhost, mobile on same network, or any other host
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'http://localhost:3001'
+  }
+  
+  // For access from mobile/tablet/other devices on same network
+  return `${protocol}//${hostname}:3001`
+}
+
 function getSystemStatusDefault() {
   return { isOnline: true, maintenanceMode: false, comment: '' }
 }
@@ -86,7 +105,7 @@ function App() {
   useEffect(() => {
     if (!currentUser) return
     // Direct database query to backend
-    fetch('http://localhost:3001/appointments')
+    fetch(getApiBaseUrl() + '/appointments')
       .then((response) => response.ok ? response.json() : Promise.reject('Failed'))
       .then((result) => setAppointments(result.appointments || result || []))
       .catch(() => console.warn('⚠️ Could not fetch appointments'))
@@ -105,7 +124,7 @@ function App() {
     const fetchSystemStatus = async () => {
       try {
         // Direct query to Node.js backend endpoint (uses direct database queries)
-        const response = await fetch('http://localhost:3001/system-status')
+        const response = await fetch(getApiBaseUrl() + '/system-status')
         if (!response.ok) throw new Error('Failed to fetch system status')
         const result = await response.json()
         setSystemStatus(result)
@@ -139,7 +158,7 @@ function App() {
       
       // Direct backend database query
       try {
-        const response = await fetch('http://localhost:3001/appointments', {
+        const response = await fetch(getApiBaseUrl() + '/appointments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(appointmentData)
@@ -167,7 +186,7 @@ function App() {
   const login = async (username, password) => {
     // Always try backend first (direct database queries)
     try {
-      const response = await fetch('http://localhost:3001/login', {
+      const response = await fetch(getApiBaseUrl() + '/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: username, password })
@@ -202,7 +221,7 @@ function App() {
     const newStatus = { ...systemStatus, ...updates }
     
     // Direct database query to backend endpoint
-    fetch('http://localhost:3001/system-status', {
+    fetch(getApiBaseUrl() + '/system-status', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -596,7 +615,7 @@ function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logo
   // Load users if Super Admin
   useEffect(() => {
     if (user.role === 'super_admin') {
-      fetch('http://localhost:3001/users')
+      fetch(getApiBaseUrl() + '/users')
         .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch users'))
         .then(result => setUsers(result.users || result || []))
         .catch(err => console.warn('⚠️ Failed to load users:', err))
@@ -609,7 +628,7 @@ function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logo
   const saveEdit = async () => { 
     try {
       // Direct database query to update appointment
-      await fetch(`http://localhost:3001/appointments/${editingId}`, { 
+      await fetch(`${getApiBaseUrl()}/appointments/${editingId}`, { 
         method: 'PUT', 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: editValues.status, date: editValues.date, time_slot: editValues.time_slot, name: editValues.name, phone: editValues.phone, service: editValues.service })
@@ -627,7 +646,7 @@ function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logo
   const removeAppointment = async (id) => { 
     try {
       // Direct database query to delete appointment
-      await fetch(`http://localhost:3001/appointments/${id}`, { method: 'DELETE' })
+      await fetch(`${getApiBaseUrl()}/appointments/${id}`, { method: 'DELETE' })
       saveAppointments(appointments.filter((apt) => apt.id !== id))
       setMessage('✅ Appointment deleted successfully!')
       setTimeout(() => setMessage(''), 2000)
@@ -641,7 +660,7 @@ function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logo
     if (!confirm('Are you sure you want to delete this user?')) return
     try {
       // Direct database query to delete user
-      await fetch(`http://localhost:3001/users/${id}`, { method: 'DELETE' })
+      await fetch(`${getApiBaseUrl()}/users/${id}`, { method: 'DELETE' })
       setUsers(users.filter(u => u.id !== id))
       setMessage('✅ User deleted successfully!')
       setTimeout(() => setMessage(''), 2000)
@@ -654,7 +673,7 @@ function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logo
   const updateUser = async (id) => {
     try {
       // Direct database query to update user
-      await fetch(`http://localhost:3001/users/${id}`, {
+      await fetch(`${getApiBaseUrl()}/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -749,7 +768,7 @@ function ManageUsers({ users: initialUsers, goTo, apiEnabled }) {
 
   useEffect(() => {
     // Direct database query to fetch all users
-    fetch('http://localhost:3001/users')
+    fetch(getApiBaseUrl() + '/users')
       .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch'))
       .then(result => setUsers(result.users || result || []))
       .catch(err => console.warn('⚠️ Failed to load users:', err))
@@ -761,7 +780,7 @@ function ManageUsers({ users: initialUsers, goTo, apiEnabled }) {
   const saveEdit = async () => {
     try {
       // Direct database query to update user
-      await fetch(`http://localhost:3001/users/${editingId}`, {
+      await fetch(`${getApiBaseUrl()}/users/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -785,7 +804,7 @@ function ManageUsers({ users: initialUsers, goTo, apiEnabled }) {
     if (!confirm('Delete this user?')) return
     try {
       // Direct database query to delete user
-      await fetch(`http://localhost:3001/users/${id}`, { method: 'DELETE' })
+      await fetch(`${getApiBaseUrl()}/users/${id}`, { method: 'DELETE' })
       setUsers(users.filter(u => u.id !== id))
       setMessage('✅ User deleted!')
       setTimeout(() => setMessage(''), 2000)
@@ -878,7 +897,7 @@ function CreateUser({ goTo }) {
     }
     try {
       // Direct database query to create user
-      const response = await fetch('http://localhost:3001/register', {
+      const response = await fetch(getApiBaseUrl() + '/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role })
@@ -965,7 +984,7 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
 
   // Load users - Direct database query
   useEffect(() => {
-    fetch('http://localhost:3001/users')
+    fetch(getApiBaseUrl() + '/users')
       .then(response => response.ok ? response.json() : Promise.reject('Failed'))
       .then(result => setUsers(result.users || result || []))
       .catch(err => console.warn('⚠️ Failed to load users:', err))
@@ -993,7 +1012,7 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
     }
     try {
       // Direct database query to create appointment
-      await fetch('http://localhost:3001/appointments', {
+      await fetch(getApiBaseUrl() + '/appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newAppointment)
@@ -1012,7 +1031,7 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
   const updateAppointment = async (id) => {
     try {
       // Direct database query to update appointment
-      await fetch(`http://localhost:3001/appointments/${id}`, {
+      await fetch(`${getApiBaseUrl()}/appointments/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editValues)
@@ -1030,7 +1049,7 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
     if (!confirm('Delete this appointment?')) return
     try {
       // Direct database query to delete appointment
-      await fetch(`http://localhost:3001/appointments/${id}`, { method: 'DELETE' })
+      await fetch(`${getApiBaseUrl()}/appointments/${id}`, { method: 'DELETE' })
       saveAppointments(appointments.filter(apt => apt.id !== id))
       setMessage('✅ Appointment deleted!')
       setTimeout(() => setMessage(''), 2000)
@@ -1043,7 +1062,7 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
     if (!confirm('Disable this user? They will not be able to login.')) return
     try {
       // Direct database query to disable user
-      await fetch(`http://localhost:3001/users/${id}`, {
+      await fetch(`${getApiBaseUrl()}/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: false })
@@ -1059,7 +1078,7 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
   const updateUser = async (id) => {
     try {
       // Direct database query to update user
-      await fetch(`http://localhost:3001/users/${id}`, {
+      await fetch(`${getApiBaseUrl()}/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1086,7 +1105,7 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
     }
     try {
       // Direct database query to update password
-      await fetch(`http://localhost:3001/users/${id}`, {
+      await fetch(`${getApiBaseUrl()}/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: newPassword })
@@ -1104,7 +1123,7 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
     if (!confirm('Permanently delete this user?')) return
     try {
       // Direct database query to delete user
-      await fetch(`http://localhost:3001/users/${id}`, { method: 'DELETE' })
+      await fetch(`${getApiBaseUrl()}/users/${id}`, { method: 'DELETE' })
       setUsers(users.filter(u => u.id !== id))
       setMessage('✅ User deleted!')
       setTimeout(() => setMessage(''), 2000)
