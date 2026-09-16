@@ -185,7 +185,6 @@ function App() {
 
   const login = async (username, password) => {
     // Always try backend first (direct database queries)
-    let backendAvailable = false
     try {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
@@ -215,7 +214,7 @@ function App() {
     // Fallback to local demo users when backend unavailable
     const user = Object.values(STAFF_USERS).find((candidate) => candidate.username === username && candidate.password === password)
     if (!user) {
-      setMessage('❌ Invalid credentials. Try demo/demo123 or admin/admin123')
+      alert('❌ Invalid credentials.\n\nTry demo credentials:\nUsername: demo\nPassword: demo123\n\nOr:\nUsername: admin\nPassword: admin123')
       return false
     }
     setCurrentUser(user)
