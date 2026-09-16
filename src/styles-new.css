@@ -1,0 +1,22 @@
+/* Password Field Styles */
+.password-label { position: relative; }
+.password-field { position: relative; display: flex; align-items: center; }
+.password-field input { flex: 1; padding-right: 40px; }
+.password-toggle { position: absolute; right: 8px; background: none; border: none; cursor: pointer; font-size: 18px; padding: 4px 8px; color: #66827a; }
+.password-toggle:hover { color: var(--ink); }
+
+/* Form Error and Success Messages */
+.form-error { color: #BE1010; font-size: 12px; margin: 4px 0; padding: 8px 12px; background: rgba(190, 16, 16, 0.1); border-left: 3px solid #BE1010; border-radius: 2px; }
+.form-success { color: #16a34a; font-size: 12px; margin: 4px 0; padding: 8px 12px; background: rgba(22, 163, 74, 0.1); border-left: 3px solid #16a34a; border-radius: 2px; }
+
+/* Dashboard Toolbar Styles */
+.dashboard-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding: 16px; background: rgba(255,255,255,0.5); border-radius: 8px; }
+.dashboard-actions { display: flex; gap: 12px; align-items: center; }
+
+/* Link Styles */
+.forgot-link { color: #66827a; font-size: 12px; text-decoration: none; margin-top: 12px; }
+.forgot-link:hover { color: var(--ink); }
+
+/* Select Styles */
+select { padding: 8px 12px; border: 1px solid #E3D1A9; border-radius: 4px; font-size: 13px; background: white; color: var(--ink); }
+select:focus { outline: none; border-color: #BE1010; }

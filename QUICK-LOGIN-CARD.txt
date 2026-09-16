@@ -1,0 +1,72 @@
+# 🔐 QUICK LOGIN REFERENCE CARD
+
+## All Passwords: `super123`
+
+```
+┌─────────────────────────────────────────────────────────┐
+│              SUPER ADMIN - FULL ACCESS ⭐               │
+├─────────────────────────────────────────────────────────┤
+│ Email: superadmin@test.com                              │
+│ Role:  super_admin                                      │
+│ Can:   Everything (System Control Dashboard)            │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│            ADMIN - ADMIN DASHBOARD ✅                   │
+├─────────────────────────────────────────────────────────┤
+│ Email: admin@test.com                                   │
+│ Role:  admin                                            │
+│ Can:   Edit/Delete Appointments, Manage Users           │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│          DOCTOR - DOCTOR PORTAL 🏥                      │
+├─────────────────────────────────────────────────────────┤
+│ Email: doctor@test.com                                  │
+│ Role:  doctor                                           │
+│ Can:   View & Edit Appointments (NO Delete)             │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│        NURSE - NURSE PORTAL (Read-Only) 👩‍⚕️             │
+├─────────────────────────────────────────────────────────┤
+│ Email: nurse@test.com                                   │
+│ Role:  nurse                                            │
+│ Can:   View Appointments Only                           │
+└─────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────┐
+│         PATIENT - PATIENT PORTAL 👤                     │
+├─────────────────────────────────────────────────────────┤
+│ Email: patient@test.com                                 │
+│ Role:  patient                                          │
+│ Can:   Book Appointments                                │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## ✅ VERIFIED & TESTED
+
+- ✅ Super Admin login works - Dashboard shows full control
+- ✅ Admin login works - Can edit/delete appointments
+- ✅ Doctor login works - Can edit but NOT delete (RBAC enforced!)
+- ✅ All roles assigned correctly in database
+- ✅ Password hashing working (SHA256)
+
+---
+
+## 🚀 START THE APP
+
+```bash
+# Terminal 1: Backend
+node server.js
+
+# Terminal 2: Frontend
+node ./node_modules/vite/bin/vite.js
+
+# Browser
+http://localhost:5173
+```
+
+Click "Staff Login" and use any credentials above (password: `super123`)

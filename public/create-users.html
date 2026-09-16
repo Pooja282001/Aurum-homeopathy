@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Test Users</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; text-align: center; }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            background: #4CAF50;
+            color: white;
+            transition: background 0.3s;
+        }
+        button:hover { background: #45a049; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .log {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background: #f5f5f5; font-weight: bold; }
+        .credentials-box {
+            background: #e8f5e9;
+            border-left: 4px solid #4CAF50;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Create Test Users for Aurum Homeopathy</h1>
+        
+        <div class="credentials-box">
+            <strong>ℹ️ This tool will create test users for all roles</strong><br>
+            Users will be created with these credentials:
+            <ul>
+                <li>Super Admin: superadmin@test.com / super123</li>
+                <li>Admin: admin@test.com / admin123</li>
+                <li>Doctor: doctor@test.com / doctor123</li>
+                <li>Nurse: nurse@test.com / nurse123</li>
+                <li>Patient: patient@test.com / patient123</li>
+            </ul>
+        </div>
+
+        <div class="buttons">
+            <button onclick="createAllUsers()">✅ Create All Test Users</button>
+            <button onclick="checkExistingUsers()">📋 Check Existing Users</button>
+            <button onclick="clearLog()">🗑️ Clear Log</button>
+        </div>
+
+        <div class="log" id="log"></div>
+
+        <div style="margin-top: 20px;">
+            <h3>📊 Test Credentials Summary</h3>
+            <table>
+                <tr>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Password</th>
+                    <th>Access</th>
+                </tr>
+                <tr>
+                    <td><strong>Super Admin</strong></td>
+                    <td>superadmin@test.com</td>
+                    <td>super123</td>
+                    <td>Can create users, manage everything</td>
+                </tr>
+                <tr>
+                    <td><strong>Admin</strong></td>
+                    <td>admin@test.com</td>
+                    <td>admin123</td>
+                    <td>Can create users, edit appointments</td>
+                </tr>
+                <tr>
+                    <td><strong>Doctor</strong></td>
+                    <td>doctor@test.com</td>
+                    <td>doctor123</td>
+                    <td>Can view & edit appointments</td>
+                </tr>
+                <tr>
+                    <td><strong>Nurse</strong></td>
+                    <td>nurse@test.com</td>
+                    <td>nurse123</td>
+                    <td>Can view appointments only</td>
+                </tr>
+                <tr>
+                    <td><strong>Patient</strong></td>
+                    <td>patient@test.com</td>
+                    <td>patient123</td>
+                    <td>Can book appointments</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3001';
+        const log = document.getElementById('log');
+
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            const line = `[${timestamp}] <span class="${className}">${message}</span>\n`;
+            log.innerHTML += line;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            log.innerHTML = '';
+        }
+
+        const testUsers = [
+            { name: 'Super Admin User', email: 'superadmin@test.com', password: 'super123', role: 'super_admin' },
+            { name: 'Admin User', email: 'admin@test.com', password: 'admin123', role: 'admin' },
+            { name: 'Dr. Shelke', email: 'doctor@test.com', password: 'doctor123', role: 'doctor' },
+            { name: 'Nurse Staff', email: 'nurse@test.com', password: 'nurse123', role: 'nurse' },
+            { name: 'Patient User', email: 'patient@test.com', password: 'patient123', role: 'patient' }
+        ];
+
+        async function checkExistingUsers() {
+            clearLog();
+            addLog('Checking existing users...', 'info');
+            
+            try {
+                const response = await fetch(`${API_URL}/users`);
+                const users = await response.json();
+                
+                addLog(`Total users in database: ${users.length}`, 'info');
+                
+                // Check for test users
+                const testEmails = testUsers.map(u => u.email);
+                const existingTestUsers = users.filter(u => testEmails.includes(u.email));
+                
+                if (existingTestUsers.length > 0) {
+                    addLog(`Found ${existingTestUsers.length} test users:`, 'success');
+                    existingTestUsers.forEach(u => {
+                        addLog(`  - ${u.email} (${u.role})`, 'success');
+                    });
+                } else {
+                    addLog('No test users found yet. Click "Create All Test Users"', 'error');
+                }
+            } catch (error) {
+                addLog(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function createAllUsers() {
+            clearLog();
+            addLog('Starting user creation process...', 'info');
+            
+            let created = 0;
+            let failed = 0;
+
+            for (const user of testUsers) {
+                try {
+                    addLog(`Creating ${user.role}: ${user.email}...`, 'info');
+                    
+                    const response = await fetch(`${API_URL}/register`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            name: user.name,
+                            email: user.email,
+                            password: user.password,
+                            role: user.role
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok) {
+                        addLog(`✓ SUCCESS: ${user.email} created!`, 'success');
+                        created++;
+                    } else {
+                        // Check if user already exists
+                        if (result.error && result.error.includes('email already exists')) {
+                            addLog(`⚠ Already exists: ${user.email}`, 'info');
+                            created++;
+                        } else {
+                            addLog(`✗ Failed: ${result.error || 'Unknown error'}`, 'error');
+                            failed++;
+                        }
+                    }
+                } catch (error) {
+                    addLog(`✗ Error creating ${user.email}: ${error.message}`, 'error');
+                    failed++;
+                }
+
+                // Small delay between requests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            addLog('', 'info');
+            addLog(`========== SUMMARY ==========`, 'info');
+            addLog(`Created/Existing: ${created}`, 'success');
+            addLog(`Failed: ${failed}`, failed > 0 ? 'error' : 'success');
+            addLog(`========== NEXT STEPS ==========`, 'info');
+            addLog(`1. Go to: http://localhost:5174/`, 'info');
+            addLog(`2. Click "Staff Login"`, 'info');
+            addLog(`3. Try: superadmin@test.com / super123`, 'info');
+            addLog(`Or test any other credential from the table above`, 'info');
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            addLog('Test user creator loaded!', 'info');
+            addLog('Click "Create All Test Users" to get started', 'info');
+        });
+    </script>
+</body>
+</html>

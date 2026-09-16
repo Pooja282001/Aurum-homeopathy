@@ -12,7 +12,10 @@
     "@vitejs/plugin-react": "latest",
     "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "express": "latest",
+    "mysql2": "latest",
+    "cors": "latest"
   },
   "devDependencies": {}
 }
