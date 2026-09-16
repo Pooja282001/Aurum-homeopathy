@@ -185,32 +185,42 @@ function App() {
 
   const login = async (username, password) => {
     // Always try backend first (direct database queries)
+    let backendAvailable = false
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+      
       const response = await fetch(getApiBaseUrl() + '/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: username, password })
+        body: JSON.stringify({ email: username, password }),
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
       
       if (response.ok) {
         const result = await response.json()
         setCurrentUser(result.user)
         localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(result.user))
+        localStorage.setItem('backendAvailable', 'true')
         goTo('Staff Dashboard')
         return true
-      } else {
-        throw new Error('Login failed')
       }
     } catch (err) {
-      console.warn('⚠️ Backend login failed, trying local demo users...')
-      // Fall through to try local STAFF_USERS as fallback
+      console.warn('⚠️ Backend unavailable, using local demo users')
+      localStorage.setItem('backendAvailable', 'false')
     }
     
-    // Try local demo users as fallback
+    // Fallback to local demo users when backend unavailable
     const user = Object.values(STAFF_USERS).find((candidate) => candidate.username === username && candidate.password === password)
-    if (!user) return false
+    if (!user) {
+      setMessage('❌ Invalid credentials. Try demo/demo123 or admin/admin123')
+      return false
+    }
     setCurrentUser(user)
     localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(user))
+    localStorage.setItem('backendAvailable', 'false')
     goTo('Staff Dashboard')
     return true
   }
@@ -307,6 +317,12 @@ function App() {
             <img className="appointment-popup-image" src="/assets/doctor-popup.svg.jfif" alt="Doctor illustration" />
             <p className="appointment-popup-text">Redirecting you to schedule your consultation...</p>
           </div>
+        </div>
+      )}
+
+      {!localStorage.getItem('backendAvailable') && currentUser && (
+        <div style={{backgroundColor: '#fff3cd', color: '#856404', padding: '12px 20px', margin: '10px 20px', borderRadius: '6px', border: '1px solid #ffeaa7', textAlign: 'center', fontSize: '14px'}}>
+          ⚠️ <strong>Demo Mode:</strong> Backend server is currently unavailable. Using local demo data. Contact administrator if this persists.
         </div>
       )}
 
