@@ -33,10 +33,10 @@ function getApiBaseUrl() {
   
   console.log('🔍 [getApiBaseUrl] Hostname:', hostname, 'Protocol:', protocol)
   
-  // For localhost development
+  // For localhost development - use production backend for testing
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    const url = 'http://localhost:5174/backend.php'
-    console.log('✅ [getApiBaseUrl] Using local PHP backend:', url)
+    const url = 'https://aurumhomeopathy.com/backend.php'
+    console.log('✅ [getApiBaseUrl] Using production backend for local test:', url)
     return url
   }
   
@@ -200,7 +200,7 @@ function App() {
       console.log('📤 [LOGIN] Sending POST request to:', apiUrl)
       
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
       
       const response = await fetch(apiUrl, {
         method: 'POST',

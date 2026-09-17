@@ -1,24 +1,26 @@
-# Aurum Homeopathy - API URL Rewriting
-# Convert /api/backend.php/endpoint to /api/backend.php?action=endpoint
+# Aurum Homeopathy - CORS and PHP Backend Configuration
 
+# Enable CORS headers for all requests
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+    Header set Access-Control-Max-Age "86400"
+</IfModule>
+
+# Handle OPTIONS requests
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    
-    # Skip rewriting for actual files and directories
-    RewriteCond %{REQUEST_FILENAME} !-f
-    RewriteCond %{REQUEST_FILENAME} !-d
-    
-    # Rewrite /api/backend.php/... to /api/backend.php?action=...
-    RewriteRule ^api/backend\.php/(.*)$ api/backend.php?action=$1 [L,QSA]
+    RewriteCond %{REQUEST_METHOD} ^OPTIONS$
+    RewriteRule ^ - [L]
 </IfModule>
 
 # Set correct MIME types
 AddType application/json .json
 AddType text/javascript .js
 
-# Enable CORS headers (if mod_headers is available)
-<IfModule mod_headers.c>
-    Header set Access-Control-Allow-Origin "*"
-    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+# Enable PHP execution
+<IfModule mod_php.c>
+    php_flag short_open_tag on
+    php_value max_input_vars 10000
 </IfModule>
