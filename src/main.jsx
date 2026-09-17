@@ -26,23 +26,44 @@ const STAFF_USERS = {
   admin: { username: 'admin', password: 'admin123', role: 'super_admin' },
 }
 
-// Get dynamic API base URL - works on localhost, mobile, tablets, and different networks
+// Get dynamic API base URL - uses PHP backend on Hostinger
 function getApiBaseUrl() {
   const hostname = window.location.hostname
   const protocol = window.location.protocol
   
-  // Use environment variable if available, otherwise construct from current host
-  if (import.meta.env.VITE_API_BASE_URL && !hostname.includes('localhost')) {
-    return import.meta.env.VITE_API_BASE_URL
-  }
+  console.log('🔍 [getApiBaseUrl] Hostname:', hostname, 'Protocol:', protocol)
   
-  // For localhost, mobile on same network, or any other host
+  // For localhost development - use local Node.js backend on port 3001
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return 'http://localhost:3001'
+    const url = 'http://localhost:3001'
+    console.log('✅ [getApiBaseUrl] Using local Node.js backend:', url)
+    return url
   }
   
-  // For access from mobile/tablet/other devices on same network
-  return `${protocol}//${hostname}:3001`
+  // For production on aurumhomeopathy.com
+  if (hostname === 'aurumhomeopathy.com' || hostname === 'www.aurumhomeopathy.com') {
+    const url = `${protocol}//${hostname}/backend.php`
+    console.log('✅ [getApiBaseUrl] Using production PHP backend:', url)
+    return url
+  }
+  
+  // For other hostnames (mobile/tablet on same network)
+  const url = `${protocol}//${hostname}/backend.php`
+  console.log('✅ [getApiBaseUrl] Using PHP backend:', url)
+  return url
+}
+
+// Helper to build endpoint URLs (handles both Node.js and PHP backends)
+function getEndpointUrl(baseUrl, action, id = null) {
+  if (baseUrl.includes(':3001')) {
+    // Node.js backend uses /endpoint format
+    if (id) return `${baseUrl}/${action}/${id}`
+    return `${baseUrl}/${action}`
+  } else {
+    // PHP backend uses ?action=endpoint format
+    if (id) return `${baseUrl}/${action}/${id}`
+    return `${baseUrl}?action=${action}`
+  }
 }
 
 function getSystemStatusDefault() {
@@ -105,7 +126,9 @@ function App() {
   useEffect(() => {
     if (!currentUser) return
     // Direct database query to backend
-    fetch(getApiBaseUrl() + '/appointments')
+    const baseUrl = getApiBaseUrl()
+    const url = getEndpointUrl(baseUrl, 'appointments')
+    fetch(url)
       .then((response) => response.ok ? response.json() : Promise.reject('Failed'))
       .then((result) => setAppointments(result.appointments || result || []))
       .catch(() => console.warn('⚠️ Could not fetch appointments'))
@@ -124,7 +147,9 @@ function App() {
     const fetchSystemStatus = async () => {
       try {
         // Direct query to Node.js backend endpoint (uses direct database queries)
-        const response = await fetch(getApiBaseUrl() + '/system-status')
+        const baseUrl = getApiBaseUrl()
+        const url = getEndpointUrl(baseUrl, 'system-status')
+        const response = await fetch(url)
         if (!response.ok) throw new Error('Failed to fetch system status')
         const result = await response.json()
         setSystemStatus(result)
@@ -158,7 +183,9 @@ function App() {
       
       // Direct backend database query
       try {
-        const response = await fetch(getApiBaseUrl() + '/appointments', {
+        const baseUrl = getApiBaseUrl()
+        const url = getEndpointUrl(baseUrl, 'appointments')
+        const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(appointmentData)
@@ -184,33 +211,84 @@ function App() {
   }
 
   const login = async (username, password) => {
+    console.log('🔐 [LOGIN] Attempting login with username:', username)
+    
     // Always try backend first (direct database queries)
     try {
-      const response = await fetch(getApiBaseUrl() + '/login', {
+      // Determine API endpoint format based on backend type
+      const baseUrl = getApiBaseUrl()
+      const apiUrl = baseUrl.includes(':3001') 
+        ? baseUrl + '/login'          // Node.js backend uses /login
+        : baseUrl + '?action=login'   // PHP backend uses ?action=login
+      
+      console.log('📤 [LOGIN] Sending POST request to:', apiUrl)
+      
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: username, password })
+        body: JSON.stringify({ email: username, password }),
+        signal: controller.signal
       })
+      
+      clearTimeout(timeoutId)
+      
+      console.log('📥 [LOGIN] Response status:', response.status, response.statusText)
       
       if (response.ok) {
         const result = await response.json()
-        setCurrentUser(result.user)
-        localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(result.user))
+        console.log('✅ [LOGIN] Login successful! User:', result.user)
+        
+        // CLIENT-SIDE ROLE FALLBACK: If backend didn't assign role, do it here
+        let user = result.user
+        if (!user.role || user.role === undefined || user.role === null) {
+          const email_lower = user.email.toLowerCase()
+          if (email_lower.includes('admin') || email_lower.includes('superadmin')) {
+            user.role = 'super_admin'
+            user.roles = ['super_admin']
+          } else if (email_lower.includes('doctor')) {
+            user.role = 'doctor'
+            user.roles = ['doctor']
+          } else if (email_lower.includes('nurse')) {
+            user.role = 'nurse'
+            user.roles = ['nurse']
+          } else {
+            user.role = 'patient'
+            user.roles = ['patient']
+          }
+          console.log('⚠️ [LOGIN] Backend role was undefined, assigned role based on email:', user.role)
+        }
+        
+        setCurrentUser(user)
+        localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(user))
+        localStorage.setItem('backendAvailable', 'true')
+        console.log('💾 [LOGIN] User saved to localStorage with role:', user.role)
         goTo('Staff Dashboard')
         return true
       } else {
-        throw new Error('Login failed')
+        const errorText = await response.text()
+        console.warn('❌ [LOGIN] Response not OK. Status:', response.status, 'Body:', errorText)
       }
     } catch (err) {
-      console.warn('⚠️ Backend login failed, trying local demo users...')
-      // Fall through to try local STAFF_USERS as fallback
+      console.error('❌ [LOGIN] Backend error:', err.message, err.stack)
+      console.warn('⚠️ [LOGIN] Backend unavailable, using local demo users')
+      localStorage.setItem('backendAvailable', 'false')
     }
     
-    // Try local demo users as fallback
+    // Fallback to local demo users when backend unavailable
+    console.log('🔄 [LOGIN] Trying local demo users...')
     const user = Object.values(STAFF_USERS).find((candidate) => candidate.username === username && candidate.password === password)
-    if (!user) return false
+    if (!user) {
+      console.error('❌ [LOGIN] Invalid credentials - user not found')
+      alert('❌ Invalid credentials.\n\nTry demo credentials:\nUsername: demo\nPassword: demo123\n\nOr:\nUsername: admin\nPassword: admin123')
+      return false
+    }
+    console.log('✅ [LOGIN] Using demo user:', user)
     setCurrentUser(user)
     localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(user))
+    localStorage.setItem('backendAvailable', 'false')
     goTo('Staff Dashboard')
     return true
   }
@@ -221,7 +299,9 @@ function App() {
     const newStatus = { ...systemStatus, ...updates }
     
     // Direct database query to backend endpoint
-    fetch(getApiBaseUrl() + '/system-status', {
+    const baseUrl = getApiBaseUrl()
+    const url = getEndpointUrl(baseUrl, 'system-status')
+    fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -307,6 +387,12 @@ function App() {
             <img className="appointment-popup-image" src="/assets/doctor-popup.svg.jfif" alt="Doctor illustration" />
             <p className="appointment-popup-text">Redirecting you to schedule your consultation...</p>
           </div>
+        </div>
+      )}
+
+      {!localStorage.getItem('backendAvailable') && currentUser && (
+        <div style={{backgroundColor: '#fff3cd', color: '#856404', padding: '12px 20px', margin: '10px 20px', borderRadius: '6px', border: '1px solid #ffeaa7', textAlign: 'center', fontSize: '14px'}}>
+          ⚠️ <strong>Demo Mode:</strong> Backend server is currently unavailable. Using local demo data. Contact administrator if this persists.
         </div>
       )}
 
@@ -601,7 +687,7 @@ function StaffLogin({ login }) {
 
   const canShowCreateUser = true // Will be checked in main dashboard
 
-  return <Subpage eyebrow="Staff access / Secure login" title={<>Care team<br /><em>portal.</em></>}><div className="login-layout"><form className="staff-login" onSubmit={showForgotForm ? handleForgotPassword : submit}><label>Email<input name="username" type="email" required autoComplete="username" value={showForgotForm ? forgotEmail : undefined} onChange={(e) => setForgotEmail(e.target.value)} /></label>{!showForgotForm && <label className="password-label">Password<div className="password-field"><input name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" /><button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>👁️</button></div></label>}{error && <p className="form-error">{error}</p>}{forgotMessage && <p className="form-success">{forgotMessage}</p>}<button className="primary-btn" type="submit">{showForgotForm ? 'Send Reset Link' : 'Sign in'} <span>↗</span></button>{!showForgotForm && <button type="button" className="text-btn forgot-link" onClick={() => setShowForgotForm(true)}>Forgot password?</button>}{showForgotForm && <button type="button" className="text-btn" onClick={() => { setShowForgotForm(false); setForgotEmail(''); }}>Back to login</button>}</form><div className="login-info"><span className="big-icon">✦</span><h2>One place for incoming appointments.</h2><p>Doctors can review requests. Super admins can update or remove them.</p><p className="demo-credentials"><strong>Local demo:</strong> doctor / doctor123<br /><strong>Hostinger:</strong> use a user created in the users table</p></div></div></Subpage>
+  return <Subpage eyebrow="Staff access / Secure login" title={<>Care team<br /><em>portal.</em></>}><div className="login-layout"><form className="staff-login" onSubmit={showForgotForm ? handleForgotPassword : submit}><label>Email<input name="username" type="text" required autoComplete="username" value={showForgotForm ? forgotEmail : undefined} onChange={(e) => setForgotEmail(e.target.value)} /></label>{!showForgotForm && <label className="password-label">Password<div className="password-field"><input name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" /><button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>👁️</button></div></label>}{error && <p className="form-error">{error}</p>}{forgotMessage && <p className="form-success">{forgotMessage}</p>}<button className="primary-btn" type="submit">{showForgotForm ? 'Send Reset Link' : 'Sign in'} <span>↗</span></button>{!showForgotForm && <button type="button" className="text-btn forgot-link" onClick={() => setShowForgotForm(true)}>Forgot password?</button>}{showForgotForm && <button type="button" className="text-btn" onClick={() => { setShowForgotForm(false); setForgotEmail(''); }}>Back to login</button>}</form><div className="login-info"><span className="big-icon">✦</span><h2>One place for incoming appointments.</h2><p>Doctors can review requests. Super admins can update or remove them.</p><p className="demo-credentials"><strong>Local demo:</strong> doctor / doctor123<br /><strong>Hostinger:</strong> use a user created in the users table</p></div></div></Subpage>
 }
 
 function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logout, goTo }) {
@@ -615,7 +701,9 @@ function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logo
   // Load users if Super Admin
   useEffect(() => {
     if (user.role === 'super_admin') {
-      fetch(getApiBaseUrl() + '/users')
+      const baseUrl = getApiBaseUrl()
+      const url = getEndpointUrl(baseUrl, 'users')
+      fetch(url)
         .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch users'))
         .then(result => setUsers(result.users || result || []))
         .catch(err => console.warn('⚠️ Failed to load users:', err))
@@ -767,34 +855,71 @@ function ManageUsers({ users: initialUsers, goTo, apiEnabled }) {
   const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
+    console.log('📝 [ManageUsers] Component mounted, fetching users...')
     // Direct database query to fetch all users
-    fetch(getApiBaseUrl() + '/users')
-      .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch'))
-      .then(result => setUsers(result.users || result || []))
-      .catch(err => console.warn('⚠️ Failed to load users:', err))
+    const apiUrl = getApiBaseUrl() + '/users'
+    console.log('📤 [ManageUsers] GET request to:', apiUrl)
+    
+    fetch(apiUrl)
+      .then(response => {
+        console.log('📥 [ManageUsers] Response status:', response.status)
+        return response.ok ? response.json() : Promise.reject('Failed to fetch: ' + response.status)
+      })
+      .then(result => {
+        console.log('✅ [ManageUsers] Users received:', result)
+        const userList = result.users || result || []
+        console.log('📋 [ManageUsers] Setting users state with', userList.length, 'users')
+        setUsers(userList)
+      })
+      .catch(err => {
+        console.error('❌ [ManageUsers] Error loading users:', err)
+        console.warn('⚠️ [ManageUsers] Could not load users from backend')
+      })
   }, [])
 
   const startEdit = (user) => { setEditingId(user.id); setEditValues({ ...user }) }
   const updateField = (field, value) => setEditValues(prev => ({ ...prev, [field]: value }))
   
   const saveEdit = async () => {
+    console.log('💾 [SaveEdit] Saving user ID:', editingId)
+    console.log('📝 [SaveEdit] Updated values:', editValues)
     try {
-      // Direct database query to update user
-      await fetch(`${getApiBaseUrl()}/users/${editingId}`, {
+      const apiUrl = `${getApiBaseUrl()}/users/${editingId}`
+      console.log('📤 [SaveEdit] PUT request to:', apiUrl)
+      
+      const payload = {
+        name: editValues.name,
+        email: editValues.email,
+        role: editValues.role,
+        ...(editValues.password && { password: editValues.password })
+      }
+      console.log('📋 [SaveEdit] Payload:', payload)
+      
+      const response = await fetch(apiUrl, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: editValues.name,
-          email: editValues.email,
-          role: editValues.role,
-          ...(editValues.password && { password: editValues.password })
-        })
+        body: JSON.stringify(payload)
       })
+      
+      console.log('📥 [SaveEdit] Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorBody = await response.text()
+        console.error('❌ [SaveEdit] Server error:', errorBody)
+        throw new Error('Server error: ' + response.status)
+      }
+      
+      const result = await response.json()
+      console.log('✅ [SaveEdit] Update successful:', result)
+      
       setUsers(users.map(u => u.id === editingId ? { ...u, ...editValues } : u))
+      console.log('📋 [SaveEdit] Updated users state')
+      
       setMessage('✅ User updated successfully!')
       setTimeout(() => setMessage(''), 2000)
       setEditingId(null)
     } catch (err) {
+      console.error('❌ [SaveEdit] Error updating user:', err.message, err)
       setMessage('❌ Error updating user: ' + err.message)
       setTimeout(() => setMessage(''), 2000)
     }
@@ -802,13 +927,31 @@ function ManageUsers({ users: initialUsers, goTo, apiEnabled }) {
   
   const deleteUser = async (id) => {
     if (!confirm('Delete this user?')) return
+    console.log('🗑️ [DeleteUser] Deleting user ID:', id)
     try {
-      // Direct database query to delete user
-      await fetch(`${getApiBaseUrl()}/users/${id}`, { method: 'DELETE' })
+      const apiUrl = `${getApiBaseUrl()}/users/${id}`
+      console.log('📤 [DeleteUser] DELETE request to:', apiUrl)
+      
+      const response = await fetch(apiUrl, { method: 'DELETE' })
+      
+      console.log('📥 [DeleteUser] Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorBody = await response.text()
+        console.error('❌ [DeleteUser] Server error:', errorBody)
+        throw new Error('Server error: ' + response.status)
+      }
+      
+      const result = await response.json()
+      console.log('✅ [DeleteUser] Delete successful:', result)
+      
       setUsers(users.filter(u => u.id !== id))
+      console.log('📋 [DeleteUser] Updated users state, user removed')
+      
       setMessage('✅ User deleted!')
       setTimeout(() => setMessage(''), 2000)
     } catch (err) {
+      console.error('❌ [DeleteUser] Error deleting user:', err.message, err)
       setMessage('❌ Error: ' + err.message)
     }
   }
@@ -897,7 +1040,7 @@ function CreateUser({ goTo }) {
     }
     try {
       // Direct database query to create user
-      const response = await fetch(getApiBaseUrl() + '/register', {
+      const response = await fetch(getApiBaseUrl() + '?action=register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role })
@@ -981,6 +1124,24 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
   const [showPasswordField, setShowPasswordField] = useState(null)
   const [passwordValue, setPasswordValue] = useState('')
   const [offlineComment, setOfflineComment] = useState(systemStatus?.comment || 'System is under maintenance')
+  const [searchAppointmentQuery, setSearchAppointmentQuery] = useState('')
+  const [searchUserQuery, setSearchUserQuery] = useState('')
+
+  // Filter appointments by name, email, or phone
+  const filteredAppointments = appointments.filter(apt => {
+    const query = searchAppointmentQuery.toLowerCase()
+    return (apt.name && apt.name.toLowerCase().includes(query)) ||
+           (apt.email && apt.email.toLowerCase().includes(query)) ||
+           (apt.phone && apt.phone.toLowerCase().includes(query))
+  })
+
+  // Filter users by name, email, or phone
+  const filteredUsers = users.filter(usr => {
+    const query = searchUserQuery.toLowerCase()
+    return (usr.name && usr.name.toLowerCase().includes(query)) ||
+           (usr.email && usr.email.toLowerCase().includes(query)) ||
+           (usr.phone && usr.phone.toLowerCase().includes(query))
+  })
 
   // Load users - Direct database query
   useEffect(() => {
@@ -1012,7 +1173,9 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
     }
     try {
       // Direct database query to create appointment
-      await fetch(getApiBaseUrl() + '/appointments', {
+      const baseUrl = getApiBaseUrl()
+      const url = getEndpointUrl(baseUrl, 'appointments')
+      await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newAppointment)
@@ -1233,9 +1396,18 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
         {adminSection === 'appointments' && (
           <div className="admin-section">
             <h2>📋 Appointments Management</h2>
-            <button className="primary-btn" onClick={() => setNewAppointmentForm(!newAppointmentForm)}>
-              {newAppointmentForm ? '❌ Cancel' : '➕ Create New Appointment'}
-            </button>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <input 
+                type="text" 
+                placeholder="🔍 Search by name, email, or phone..." 
+                value={searchAppointmentQuery}
+                onChange={(e) => setSearchAppointmentQuery(e.target.value)}
+                style={{flex: 1, padding: '10px', border: '1px solid #ddd', borderRadius: '5px'}}
+              />
+              <button className="primary-btn" onClick={() => setNewAppointmentForm(!newAppointmentForm)}>
+                {newAppointmentForm ? '❌ Cancel' : '➕ Create New Appointment'}
+              </button>
+            </div>
 
             {newAppointmentForm && (
               <div className="form-card">
@@ -1253,10 +1425,10 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
             )}
 
             <div className="appointments-list">
-              {appointments.length === 0 ? (
-                <p>No appointments</p>
+              {filteredAppointments.length === 0 ? (
+                <p>{searchAppointmentQuery ? '❌ No appointments found matching your search' : 'No appointments'}</p>
               ) : (
-                appointments.map((apt) => (
+                filteredAppointments.map((apt) => (
                   <div className="apt-card" key={apt.id}>
                     {editingId === apt.id ? (
                       <div className="edit-form">
@@ -1294,7 +1466,16 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
         {adminSection === 'users' && (
           <div className="admin-section">
             <h2>👥 Users Management</h2>
-            <button className="primary-btn" onClick={() => goTo('Create User')}>➕ Create New User</button>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <input 
+                type="text" 
+                placeholder="🔍 Search by name, email, or phone..." 
+                value={searchUserQuery}
+                onChange={(e) => setSearchUserQuery(e.target.value)}
+                style={{flex: 1, padding: '10px', border: '1px solid #ddd', borderRadius: '5px'}}
+              />
+              <button className="primary-btn" onClick={() => goTo('Create User')}>➕ Create New User</button>
+            </div>
 
             <table className="users-table">
               <thead>
@@ -1306,7 +1487,10 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {filteredUsers.length === 0 ? (
+                  <tr><td colSpan="4" style={{textAlign: 'center', padding: '20px'}}>{searchUserQuery ? '❌ No users found matching your search' : 'No users'}</td></tr>
+                ) : (
+                  filteredUsers.map((u) => (
                   <tr key={u.id}>
                     {editingId === u.id ? (
                       <>
@@ -1355,7 +1539,8 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
                       </>
                     )}
                   </tr>
-                ))}
+                ))
+                )}
               </tbody>
             </table>
           </div>

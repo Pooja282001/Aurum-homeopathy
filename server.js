@@ -1,7 +1,12 @@
+import dotenv from 'dotenv';
 import mysql from 'mysql2/promise';
 import express from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
+
+// Load environment variables from .env or .env.local
+dotenv.config({ path: '.env.local' });
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -9,17 +14,21 @@ app.use(express.json());
 
 // Logging middleware
 app.use((req, res, next) => {
-  console.log(`[REQUEST] ${req.method} ${req.path}`);
-  if (req.body) console.log('[BODY]', req.body);
+  console.log(`\n📨 [REQUEST] ${req.method.toUpperCase()} ${req.path}`);
+  console.log(`⏰ [TIME] ${new Date().toISOString()}`);
+  if (req.body && Object.keys(req.body).length > 0) console.log('📦 [BODY]', req.body);
   next();
 });
 
 // Database connection pool
+// Use localhost because backend is deployed ON Hostinger same server
+// If backend deployed OUTSIDE Hostinger, use: srv1752.hstgr.io
 const pool = mysql.createPool({
-  host: 'srv1752.hstgr.io',
-  user: 'u154384799_Aurum',
-  password: 'Aurum2025',
-  database: 'u154384799_Ahc',
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'u154384799_Aurum',
+  password: process.env.DB_PASS || 'Aurum2025',
+  database: process.env.DB_NAME || 'u154384799_Ahc',
+  port: process.env.DB_PORT || 3306,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
@@ -176,12 +185,24 @@ process.on('uncaughtException', (err) => {
 
 // Test connection
 app.get('/health', async (req, res) => {
+  console.log('🏥 [HEALTH] Health check requested');
   try {
+    console.log('🔗 [HEALTH] Getting database connection...');
     const connection = await pool.getConnection();
+    console.log('✅ [HEALTH] Connection obtained');
+    
+    console.log('🔍 [HEALTH] Pinging database...');
     await connection.ping();
+    console.log('✅ [HEALTH] Database ping successful');
+    
     connection.release();
-    res.json({ ok: true, database: 'connected', message: '✅ Database connection successful!' });
+    console.log('✅ [HEALTH] Connection released');
+    
+    const response = { ok: true, database: 'connected', message: '✅ Database connection successful!', timestamp: new Date().toISOString() };
+    console.log('📤 [HEALTH] Sending response:', response);
+    res.json(response);
   } catch (error) {
+    console.error('❌ [HEALTH] Database connection failed:', error.message, error.stack);
     res.status(500).json({ error: 'Database connection failed', message: error.message });
   }
 });
@@ -229,7 +250,13 @@ app.get('/diagnose', async (req, res) => {
 // Get all users
 app.get('/users', async (req, res) => {
   try {
+    console.log('👥 [GET_USERS] Fetching all users...');
+    
+    console.log('🔗 [GET_USERS] Getting database connection...');
     const connection = await pool.getConnection();
+    console.log('✅ [GET_USERS] Connection obtained');
+    
+    console.log('🔍 [GET_USERS] Executing query to fetch users with roles...');
     const [rows] = await connection.execute(`
       SELECT 
         u.id, 
@@ -244,9 +271,21 @@ app.get('/users', async (req, res) => {
       GROUP BY u.id
       ORDER BY u.id
     `);
+    
+    console.log('📊 [GET_USERS] Query returned', rows.length, 'user(s)');
+    if (rows.length > 0) {
+      console.log('📋 [GET_USERS] Users:', rows.map(u => ({ id: u.id, name: u.name, email: u.email, role: u.role })));
+    }
+    
     connection.release();
-    res.json({ users: rows });
+    console.log('✅ [GET_USERS] Connection released');
+    
+    const response = { users: rows };
+    console.log('📤 [GET_USERS] Sending response with', rows.length, 'users');
+    res.json(response);
   } catch (error) {
+    console.error('❌ [GET_USERS] ERROR:', error.message);
+    console.error('📋 [GET_USERS] Stack trace:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -254,11 +293,25 @@ app.get('/users', async (req, res) => {
 // Get appointments
 app.get('/appointments', async (req, res) => {
   try {
+    console.log('📅 [GET_APPOINTMENTS] Fetching all appointments...');
+    
+    console.log('🔗 [GET_APPOINTMENTS] Getting database connection...');
     const connection = await pool.getConnection();
+    console.log('✅ [GET_APPOINTMENTS] Connection obtained');
+    
+    console.log('🔍 [GET_APPOINTMENTS] Executing query...');
     const [rows] = await connection.query('SELECT * FROM appointments');
+    console.log('📊 [GET_APPOINTMENTS] Retrieved', rows.length, 'appointment(s)');
+    
     connection.release();
-    res.json({ appointments: rows });
+    console.log('✅ [GET_APPOINTMENTS] Connection released');
+    
+    const response = { appointments: rows };
+    console.log('📤 [GET_APPOINTMENTS] Sending response');
+    res.json(response);
   } catch (error) {
+    console.error('❌ [GET_APPOINTMENTS] ERROR:', error.message);
+    console.error('📋 [GET_APPOINTMENTS] Stack trace:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -268,25 +321,32 @@ app.post('/appointments', async (req, res) => {
   try {
     const { user_id, name, phone, email, date, time_slot, service, status } = req.body;
     
+    console.log('📅 [POST_APPOINTMENT] Creating new appointment');
+    console.log('📝 [POST_APPOINTMENT] Data:', { name, email, phone, date, time_slot, service });
+    
     // Validation
     if (!name || !email || !phone || !date || !time_slot) {
-      console.log('[ERROR] Missing required fields:', { name, email, phone, date, time_slot });
+      console.warn('⚠️ [POST_APPOINTMENT] Missing required fields');
       return res.status(422).json({ 
         error: 'Missing required fields: name, email, phone, date, time_slot' 
       });
     }
     
-    console.log('[NEW APPOINTMENT]', { name, email, phone, date, time_slot });
-    
+    console.log('🔗 [POST_APPOINTMENT] Getting database connection...');
     const connection = await pool.getConnection();
+    console.log('✅ [POST_APPOINTMENT] Connection obtained');
+    
+    console.log('🔍 [POST_APPOINTMENT] Inserting appointment into database...');
     const [result] = await connection.execute(
       'INSERT INTO appointments (user_id, name, phone, email, date, time_slot, service, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [user_id || null, name, phone, email, date, time_slot, service || 'General consultation', status || 'New']
     );
-    connection.release();
+    console.log('✅ [POST_APPOINTMENT] Appointment inserted with ID:', result.insertId);
     
-    console.log('[SUCCESS] APPOINTMENT SAVED - ID:', result.insertId);
-    res.status(201).json({ 
+    connection.release();
+    console.log('✅ [POST_APPOINTMENT] Connection released');
+    
+    const response = { 
       id: result.insertId, 
       message: '✅ Appointment booked successfully!',
       appointment: {
@@ -299,9 +359,12 @@ app.post('/appointments', async (req, res) => {
         service,
         status: status || 'New'
       }
-    });
+    };
+    console.log('📤 [POST_APPOINTMENT] SUCCESS! Appointment created:', response);
+    res.status(201).json(response);
   } catch (error) {
-    console.error('❌ APPOINTMENT ERROR:', error.message);
+    console.error('❌ [POST_APPOINTMENT] ERROR:', error.message);
+    console.error('📋 [POST_APPOINTMENT] Stack trace:', error.stack);
     res.status(500).json({ 
       error: 'Failed to book appointment: ' + error.message 
     });
@@ -446,41 +509,53 @@ app.put('/system-status', async (req, res) => {
 app.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log('[NEW LOGIN]', { email });
+    console.log('🔐 [LOGIN] Attempting login with email:', email);
     
     if (!email || !password) {
+      console.warn('⚠️ [LOGIN] Missing email or password');
       return res.status(422).json({ error: 'Email and password required' });
     }
 
+    console.log('🔗 [LOGIN] Getting database connection...');
     const connection = await pool.getConnection();
+    console.log('✅ [LOGIN] Connection obtained');
     
     // Get user
+    console.log('🔍 [LOGIN] Querying users table for email:', email);
     const [users] = await connection.execute(
       'SELECT id, name, email, password_hash FROM users WHERE email = ? LIMIT 1',
       [email]
     );
+    console.log('📊 [LOGIN] Query result:', users.length, 'user(s) found');
 
     if (users.length === 0) {
+      console.warn('❌ [LOGIN] User not found for email:', email);
       connection.release();
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     // Verify password hash
+    console.log('🔒 [LOGIN] Verifying password hash...');
     const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
     if (passwordHash !== users[0].password_hash) {
+      console.warn('❌ [LOGIN] Password hash mismatch for user:', email);
       connection.release();
       return res.status(401).json({ error: 'Invalid email or password' });
     }
+    console.log('✅ [LOGIN] Password verified successfully');
 
     // Get user roles and permissions
+    console.log('🔍 [LOGIN] Fetching user roles...');
     const [userRoles] = await connection.execute(`
       SELECT r.id as role_id, r.name as role_name
       FROM user_roles ur
       JOIN roles r ON ur.role_id = r.id
       WHERE ur.user_id = ?
     `, [users[0].id]);
+    console.log('📊 [LOGIN] Found', userRoles.length, 'role(s):', userRoles.map(r => r.role_name).join(', '));
 
     // Get permissions for user
+    console.log('🔍 [LOGIN] Fetching user permissions...');
     const [userPermissions] = await connection.execute(`
       SELECT DISTINCT p.name as permission
       FROM user_roles ur
@@ -488,15 +563,17 @@ app.post('/login', async (req, res) => {
       JOIN permissions p ON rp.permission_id = p.id
       WHERE ur.user_id = ?
     `, [users[0].id]);
+    console.log('📊 [LOGIN] Found', userPermissions.length, 'permission(s)');
 
     connection.release();
+    console.log('✅ [LOGIN] Connection released');
 
     // Format response - use primary role (or first role if multiple)
     const primaryRole = userRoles.length > 0 ? userRoles[0].role_name : 'patient';
     const permissions = userPermissions.map(p => p.permission);
 
-    console.log('[SUCCESS] LOGIN SUCCESSFUL:', users[0].name, '| Roles:', userRoles.map(r => r.role_name).join(', '));
-    res.json({ 
+    console.log('✅ [LOGIN] SUCCESS! User:', users[0].name, '| Role:', primaryRole);
+    const response = { 
       user: {
         id: users[0].id,
         name: users[0].name,
@@ -506,9 +583,12 @@ app.post('/login', async (req, res) => {
         permissions: permissions
       },
       message: '✅ Login successful!' 
-    });
+    };
+    console.log('📤 [LOGIN] Sending response:', response);
+    res.json(response);
   } catch (error) {
-    console.error('❌ LOGIN ERROR:', error.message);
+    console.error('❌ [LOGIN] ERROR:', error.message);
+    console.error('📋 [LOGIN] Stack trace:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -604,13 +684,17 @@ app.put('/users/:id', async (req, res) => {
     const { name, email, password, role } = req.body;
     const userId = req.params.id;
     
-    console.log('[UPDATE USER]', { id: userId, name, email, role });
+    console.log('✏️ [PUT_USER] Updating user ID:', userId);
+    console.log('📝 [PUT_USER] Update data:', { name, email, role, hasPassword: !!password });
     
     if (!name && !email && !password && !role) {
+      console.warn('⚠️ [PUT_USER] No fields provided for update');
       return res.status(422).json({ error: 'At least one field required' });
     }
 
+    console.log('🔗 [PUT_USER] Getting database connection...');
     const connection = await pool.getConnection();
+    console.log('✅ [PUT_USER] Connection obtained');
     
     // Build dynamic update query for user table (name, email, password only)
     const updates = [];
@@ -619,27 +703,33 @@ app.put('/users/:id', async (req, res) => {
     if (name) {
       updates.push('name = ?');
       params.push(name);
+      console.log('📝 [PUT_USER] Will update name to:', name);
     }
     if (email) {
       updates.push('email = ?');
       params.push(email);
+      console.log('📝 [PUT_USER] Will update email to:', email);
     }
     if (password) {
+      console.log('🔒 [PUT_USER] Hashing password...');
       const passwordHash = crypto.createHash('sha256').update(password).digest('hex');
       updates.push('password_hash = ?');
       params.push(passwordHash);
+      console.log('✅ [PUT_USER] Password hashed');
     }
     
     // Update user fields if any
     if (updates.length > 0) {
       params.push(userId);
       const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
-      console.log('[SQL QUERY]', query);
+      console.log('🔍 [PUT_USER] Executing update query...');
       await connection.execute(query, params);
+      console.log('✅ [PUT_USER] User table updated successfully');
     }
 
     // Handle role change via user_roles table
     if (role && ['patient', 'doctor', 'nurse', 'admin', 'super_admin'].includes(role)) {
+      console.log('👤 [PUT_USER] Updating role to:', role);
       // Get role ID
       const [roleData] = await connection.execute(
         'SELECT id FROM roles WHERE name = ?',
@@ -647,25 +737,35 @@ app.put('/users/:id', async (req, res) => {
       );
       
       if (roleData.length > 0) {
+        console.log('🔍 [PUT_USER] Found role ID:', roleData[0].id);
+        
         // Delete existing roles
+        console.log('🗑️ [PUT_USER] Deleting existing roles for user ID:', userId);
         await connection.execute('DELETE FROM user_roles WHERE user_id = ?', [userId]);
+        console.log('✅ [PUT_USER] Existing roles deleted');
         
         // Insert new role
+        console.log('➕ [PUT_USER] Inserting new role assignment...');
         await connection.execute(
           'INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)',
           [userId, roleData[0].id]
         );
-        
-        console.log('[SUCCESS] USER ROLE UPDATED - User:', userId, 'Role:', role);
+        console.log('✅ [PUT_USER] Role updated successfully');
+      } else {
+        console.warn('⚠️ [PUT_USER] Role not found in database:', role);
       }
     }
 
     connection.release();
+    console.log('✅ [PUT_USER] Connection released');
     
-    console.log('[SUCCESS] USER UPDATED - ID:', userId);
-    res.json({ message: '[SUCCESS] User updated successfully!' });
+    console.log('✅ [PUT_USER] SUCCESS! User ID', userId, 'updated completely');
+    const response = { message: '✅ User updated successfully!', userId };
+    console.log('📤 [PUT_USER] Sending response:', response);
+    res.json(response);
   } catch (error) {
-    console.error('[ERROR]', error.message);
+    console.error('❌ [PUT_USER] ERROR:', error.message);
+    console.error('📋 [PUT_USER] Stack trace:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -674,20 +774,37 @@ app.put('/users/:id', async (req, res) => {
 app.delete('/users/:id', async (req, res) => {
   try {
     const userId = req.params.id;
-    console.log('[DELETE USER]', { id: userId });
+    console.log('🗑️ [DELETE_USER] Deleting user ID:', userId);
     
+    console.log('🔗 [DELETE_USER] Getting database connection...');
     const connection = await pool.getConnection();
+    console.log('✅ [DELETE_USER] Connection obtained');
+    
+    // First delete user roles
+    console.log('🔍 [DELETE_USER] Deleting user_roles for user ID:', userId);
+    await connection.execute('DELETE FROM user_roles WHERE user_id = ?', [userId]);
+    console.log('✅ [DELETE_USER] User roles deleted');
+    
+    // Then delete user
+    console.log('🔍 [DELETE_USER] Deleting user from users table...');
     const [result] = await connection.execute('DELETE FROM users WHERE id = ?', [userId]);
+    console.log('📊 [DELETE_USER] Affected rows:', result.affectedRows);
+    
     connection.release();
+    console.log('✅ [DELETE_USER] Connection released');
     
     if (result.affectedRows === 0) {
+      console.warn('❌ [DELETE_USER] User not found for ID:', userId);
       return res.status(404).json({ error: 'User not found' });
     }
     
-    console.log('[SUCCESS] USER DELETED - ID:', userId);
-    res.json({ message: '[SUCCESS] User deleted successfully!' });
+    console.log('✅ [DELETE_USER] SUCCESS! User ID', userId, 'deleted completely');
+    const response = { message: '✅ User deleted successfully!', userId };
+    console.log('📤 [DELETE_USER] Sending response:', response);
+    res.json(response);
   } catch (error) {
-    console.error('[ERROR]', error.message);
+    console.error('❌ [DELETE_USER] ERROR:', error.message);
+    console.error('📋 [DELETE_USER] Stack trace:', error.stack);
     res.status(500).json({ error: error.message });
   }
 });
@@ -950,46 +1067,63 @@ const PORT = 3001;
 initializeRBAC().then(() => {
   app.listen(PORT, () => {
     console.log(`
-================================================================
-   AURUM HOMEOPATHY - BACKEND SERVER
-   DATABASE: Connected to Hostinger
-   Status: READY
-================================================================
+╔════════════════════════════════════════════════════════════════╗
+║         🚀 AURUM HOMEOPATHY - BACKEND SERVER 🚀               ║
+╚════════════════════════════════════════════════════════════════╝
 
-[*] Server URL: http://localhost:${PORT}
+📊 DATABASE CONNECTION INFO:
+   Host:     ${process.env.DB_HOST || 'localhost'}
+   Port:     ${process.env.DB_PORT || 3306}
+   User:     ${process.env.DB_USER || 'u154384799_Aurum'}
+   Database: ${process.env.DB_NAME || 'u154384799_Ahc'}
+   Status:   🟢 CONNECTED
 
-[*] API ENDPOINTS:
+🌍 SERVER STATUS:
+   Protocol: http://
+   Host:     localhost
+   Port:     ${PORT}
+   URL:      http://localhost:${PORT}
+   Status:   🟢 READY
+
+⏰ Started at: ${new Date().toISOString()}
+
+🔗 API ENDPOINTS:
+
+   HEALTH & DIAGNOSTICS:
+   [✓] GET  /health               - Health check
+   [✓] GET  /diagnose             - Full diagnostics
 
    AUTHENTICATION:
-   [OK] POST /login               - Login user
-   [OK] POST /register            - Register new user
+   [✓] POST /login                - Login user with email/password
+   [✓] POST /register             - Register new user with role
 
    USER MANAGEMENT (Super Admin):
-   [OK] GET  /users               - Get all users
-   [OK] GET  /users/:id           - Get single user
-   [OK] PUT  /users/:id           - Update user (name, email, password, role)
-   [OK] DELETE /users/:id         - Delete user
+   [✓] GET  /users                - Get all users with roles
+   [✓] POST /users                - Create new user
+   [✓] GET  /users/:id            - Get single user
+   [✓] PUT  /users/:id            - Update user details/role
+   [✓] DELETE /users/:id          - Delete user
 
-   APPOINTMENTS:
-   [OK] GET  /appointments        - Get all appointments
-   [OK] POST /appointments        - Book new appointment
-   [OK] GET  /appointments/:id    - Get single appointment
-   [OK] PUT  /appointments/:id    - Update appointment (Admin/Doctor)
-   [OK] DELETE /appointments/:id  - Delete appointment (Admin)
+   APPOINTMENT MANAGEMENT:
+   [✓] GET  /appointments         - Get all appointments
+   [✓] POST /appointments         - Create new appointment
+   [✓] GET  /appointments/:id     - Get single appointment
+   [✓] PUT  /appointments/:id     - Update appointment
+   [✓] DELETE /appointments/:id   - Delete appointment
 
-   ADMIN/DATA:
-   [OK] GET  /admin/data          - Get all users & appointments
-   [OK] GET  /health              - Check server status
-   [OK] GET  /diagnose            - Check system status, users, roles
+   SYSTEM CONTROL:
+   [✓] GET  /system-status        - Get system status
+   [✓] PUT  /system-status        - Update system status
 
-[DATABASE] u154384799_Ahc @ srv1752.hstgr.io
+📝 LOGGING:
+   All requests logged with 🔐 [METHOD] prefix
+   Database operations logged in detail
+   Errors logged with ❌ prefix
 
-[IMPORTANT] All data is saved to Hostinger database!
-   Both local and production use the SAME database.
-
-`)
+🎯 Ready to accept connections!
+`);
   });
-}).catch(err => {
-  console.error('[ERROR] Failed to initialize RBAC:', err.message);
+}).catch((err) => {
+  console.error('❌ [FATAL] Failed to initialize RBAC:', err.message);
   process.exit(1);
 });

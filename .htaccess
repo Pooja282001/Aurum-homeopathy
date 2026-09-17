@@ -1,0 +1,26 @@
+# Aurum Homeopathy - CORS and PHP Backend Configuration
+
+# Enable CORS headers for all requests
+<IfModule mod_headers.c>
+    Header set Access-Control-Allow-Origin "*"
+    Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+    Header set Access-Control-Max-Age "86400"
+</IfModule>
+
+# Handle OPTIONS requests
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_METHOD} ^OPTIONS$
+    RewriteRule ^ - [L]
+</IfModule>
+
+# Set correct MIME types
+AddType application/json .json
+AddType text/javascript .js
+
+# Enable PHP execution
+<IfModule mod_php.c>
+    php_flag short_open_tag on
+    php_value max_input_vars 10000
+</IfModule>
