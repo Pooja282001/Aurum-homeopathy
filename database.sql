@@ -26,7 +26,17 @@ CREATE TABLE appointments (
 CREATE TABLE media (
   id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(160) NOT NULL,
+  description TEXT,
   type ENUM('image', 'video') NOT NULL,
   url TEXT NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  thumbnail_url TEXT,
+  is_featured BOOLEAN DEFAULT FALSE,
+  display_order INT DEFAULT 0,
+  created_by INT UNSIGNED,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT media_user_fk FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
+  INDEX media_type_idx (type),
+  INDEX media_featured_idx (is_featured),
+  INDEX media_order_idx (display_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

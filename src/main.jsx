@@ -4,6 +4,7 @@ import { apiRequest, isApiConfigured } from './api'
 import './styles.css'
 import './styles-dashboard.css'
 import './styles-super-admin.css'
+import './gallery-styles.css'
 
 const GOOGLE_REVIEWS_URL = 'https://maps.app.goo.gl/FbuvhHwrtZFqLMwH7'
 
@@ -17,6 +18,7 @@ const navItems = ['Home', 'About Us', 'Services', 'Get Appointment', 'Contact Us
 const APPOINTMENTS_KEY = 'shelkes-aurum-appointments'
 const STAFF_SESSION_KEY = 'shelkes-aurum-staff-user'
 const SYSTEM_STATUS_KEY = 'shelkes-aurum-system-status'
+const GALLERY_KEY = 'shelkes-aurum-gallery'
 const clinicTimeSlots = [
   '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM', '01:00 PM', '01:30 PM',
   '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM', '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM'
@@ -70,6 +72,33 @@ function getSystemStatusDefault() {
   return { isOnline: true, maintenanceMode: false, comment: '' }
 }
 
+function getDefaultGallery() {
+  return [
+    { id: 1, type: 'video', title: 'Patient Success Story', description: 'Watch how homeopathy transformed this patient\'s chronic condition', url: 'https://www.w3schools.com/html/mov_bbb.mp4', thumbnail: '🎬', featured: true },
+    { id: 2, type: 'video', title: 'Dr. Shelke Consultation', description: 'Experience a typical consultation session', url: 'https://www.w3schools.com/html/movie.mp4', thumbnail: '🩺', featured: true },
+    { id: 3, type: 'image', title: 'Clinic Interior', description: 'Our modern, welcoming clinic space', url: 'https://picsum.photos/600/400?random=1', thumbnail: '🏥', featured: false },
+    { id: 4, type: 'image', title: 'Treatment Room', description: 'State-of-the-art treatment facilities', url: 'https://picsum.photos/600/400?random=2', thumbnail: '🛋️', featured: false },
+    { id: 5, type: 'image', title: 'Doctor\'s Office', description: 'Professional consultation space', url: 'https://picsum.photos/600/400?random=3', thumbnail: '🏥', featured: false },
+    { id: 6, type: 'image', title: 'Sterilization Station', description: 'Hygienic treatment area', url: 'https://picsum.photos/600/400?random=4', thumbnail: '✓', featured: false },
+    { id: 7, type: 'image', title: 'Health Records Storage', description: 'Organized patient records', url: 'https://picsum.photos/600/400?random=5', thumbnail: '📋', featured: false },
+    { id: 8, type: 'image', title: 'Clinic Exterior', description: 'Welcome to our clinic', url: 'https://picsum.photos/600/400?random=6', thumbnail: '🏪', featured: false },
+  ]
+}
+
+function getGallery() {
+  try {
+    const stored = localStorage.getItem(GALLERY_KEY)
+    if (!stored) {
+      const defaultGallery = getDefaultGallery()
+      localStorage.setItem(GALLERY_KEY, JSON.stringify(defaultGallery))
+      return defaultGallery
+    }
+    return JSON.parse(stored)
+  } catch {
+    return getDefaultGallery()
+  }
+}
+
 function getAppointments() {
   try {
     return JSON.parse(localStorage.getItem(APPOINTMENTS_KEY)) || []
@@ -91,6 +120,7 @@ function App() {
   const [screen, setScreen] = useState(currentUser ? 'Staff Dashboard' : 'Home')
   const [submitted, setSubmitted] = useState(false)
   const [appointments, setAppointments] = useState(getAppointments)
+  const [gallery, setGallery] = useState(getGallery)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [showAppointmentPopup, setShowAppointmentPopup] = useState(false)
   const [systemStatus, setSystemStatus] = useState(getSystemStatusDefault)
@@ -282,7 +312,7 @@ function App() {
     const user = Object.values(STAFF_USERS).find((candidate) => candidate.username === username && candidate.password === password)
     if (!user) {
       console.error('❌ [LOGIN] Invalid credentials - user not found')
-      alert('❌ Invalid credentials.\n\nTry demo credentials:\nUsername: demo\nPassword: demo123\n\nOr:\nUsername: admin\nPassword: admin123')
+      alert('❌ Invalid credentials. Please contact the administrator.')
       return false
     }
     console.log('✅ [LOGIN] Using demo user:', user)
@@ -397,13 +427,13 @@ function App() {
       )}
 
       <main>
-        {screen === 'Home' && <Home goTo={goTo} triggerAppointmentPopup={triggerAppointmentPopup} />}
+        {screen === 'Home' && <Home goTo={goTo} triggerAppointmentPopup={triggerAppointmentPopup} gallery={gallery} setGallery={setGallery} />}
         {screen === 'About Us' && <About goTo={goTo} />}
         {screen === 'Services' && <Services goTo={goTo} triggerAppointmentPopup={triggerAppointmentPopup} />}
         {screen === 'Get Appointment' && <Appointment submitted={submitted} setSubmitted={setSubmitted} addAppointment={addAppointment} />}
         {screen === 'Contact Us' && <Contact />}
         {screen === 'Staff Login' && <StaffLogin login={login} />}
-        {screen === 'Staff Dashboard' && currentUser && currentUser.role === 'super_admin' && <SuperAdminDashboard user={currentUser} appointments={appointments} saveAppointments={saveAppointments} apiEnabled={isApiConfigured} logout={() => { setCurrentUser(null); localStorage.removeItem(STAFF_SESSION_KEY); goTo('Home') }} goTo={goTo} updateSystemStatus={updateSystemStatus} systemStatus={systemStatus} />}
+        {screen === 'Staff Dashboard' && currentUser && currentUser.role === 'super_admin' && <SuperAdminDashboard user={currentUser} appointments={appointments} saveAppointments={saveAppointments} apiEnabled={isApiConfigured} logout={() => { setCurrentUser(null); localStorage.removeItem(STAFF_SESSION_KEY); goTo('Home') }} goTo={goTo} updateSystemStatus={updateSystemStatus} systemStatus={systemStatus} gallery={gallery} setGallery={setGallery} />}
         {screen === 'Staff Dashboard' && currentUser && currentUser.role !== 'super_admin' && <StaffDashboard user={currentUser} appointments={appointments} saveAppointments={saveAppointments} apiEnabled={isApiConfigured} logout={() => { setCurrentUser(null); localStorage.removeItem(STAFF_SESSION_KEY); goTo('Home') }} goTo={goTo} />}
         {screen === 'Create User' && currentUser && (currentUser.role === 'super_admin' || currentUser.role === 'admin') && <CreateUser goTo={goTo} />}
         {screen === 'Manage Users' && currentUser && currentUser.role === 'super_admin' && <ManageUsers users={appointments} goTo={goTo} apiEnabled={isApiConfigured} />}
@@ -416,7 +446,7 @@ function App() {
   )
 }
 
-function Home({ goTo, triggerAppointmentPopup }) {
+function Home({ goTo, triggerAppointmentPopup, gallery, setGallery }) {
   return <>
     <Reveal className="hero page-width">
       <div className="hero-copy">
@@ -449,6 +479,8 @@ function Home({ goTo, triggerAppointmentPopup }) {
       <div className="story-photo story-photo-main" /><div className="story-photo story-photo-detail" />
     </Reveal>
     <Reveal className="service-preview page-width"><div className="section-heading"><div><p className="section-kicker">03 / OUR SPECIALIZATION IN Pimple saudagar </p><h2>Root-Cause Homeopathic Treatments</h2></div><button className="round-arrow" onClick={() => goTo('Services')}>↗</button></div><div className="service-grid">{services.map((service) => <article className="service-card" key={service.title}><span className="service-icon">{service.icon}</span><h3>{service.title}</h3><p>{service.copy}</p><span className="card-arrow">↗</span></article>)}</div></Reveal>
+
+    <GallerySection gallery={gallery} setGallery={setGallery} />
 
     <section className="google-reviews-section page-width" aria-labelledby="google-reviews-heading">
       <div className="google-reviews-shell">
@@ -514,6 +546,395 @@ function Reveal({ className, children }) {
 }
 
 function Subpage({ eyebrow, title, children }) { return <section className="subpage page-width"><p className="section-kicker">{eyebrow}</p><h1>{title}</h1>{children}</section> }
+
+function GallerySection({ gallery, setGallery }) {
+  const [selectedItem, setSelectedItem] = useState(null)
+  const [media, setMedia] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [visibilitySettings, setVisibilitySettings] = useState({ videos_visible: true, photos_visible: true })
+
+  // Generate video thumbnail from URL with modern gradient
+  const getVideoThumbnail = (url, title) => {
+    const gradients = [
+      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+      'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+      'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+      'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+      'linear-gradient(135deg, #30cfd0 0%, #330867 100%)',
+      'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+      'linear-gradient(135deg, #ff9a56 0%, #ff6a88 100%)'
+    ]
+    const gradientIndex = (title.charCodeAt(0) + title.charCodeAt(title.length - 1)) % gradients.length
+    return gradients[gradientIndex]
+  }
+
+  // Load media from database on mount
+  useEffect(() => {
+    const loadMedia = async () => {
+      try {
+        const baseUrl = getApiBaseUrl()
+        const url = getEndpointUrl(baseUrl, 'media')
+        const response = await fetch(url)
+        if (response.ok) {
+          const result = await response.json()
+          const mediaData = Array.isArray(result) ? result : (result.media || [])
+          // Sort by ID descending (newest first)
+          const sorted = mediaData.sort((a, b) => b.id - a.id)
+          setMedia(sorted)
+          console.log('✅ Media loaded:', sorted.length, 'items')
+        } else {
+          console.warn('⚠️ Failed to load media, using fallback gallery')
+          setMedia(gallery)
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not load media from database, using fallback gallery:', error.message)
+        setMedia(gallery)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadMedia()
+  }, [gallery])
+
+  // Load gallery visibility settings from API (global database) or localStorage fallback
+  useEffect(() => {
+    const loadVisibilitySettings = async () => {
+      try {
+        console.log('📡 Fetching visibility settings from API...')
+        const response = await fetch('http://localhost:3001/gallery-settings-get')
+        if (response.ok) {
+          const settings = await response.json()
+          // Ensure values are proper integers (0 = false, 1 = true)
+          const normalizedSettings = {
+            videos_visible: parseInt(settings.videos_visible) === 1 ? 1 : 0,
+            photos_visible: parseInt(settings.photos_visible) === 1 ? 1 : 0
+          }
+          setVisibilitySettings(normalizedSettings)
+          localStorage.setItem('galleryVisibility', JSON.stringify(normalizedSettings))
+          console.log('✅ Gallery visibility loaded from API (GLOBAL):', normalizedSettings)
+          return
+        }
+      } catch (error) {
+        console.warn('⚠️ API failed, trying localStorage fallback:', error.message)
+      }
+      
+      // Fallback to localStorage if API fails
+      try {
+        const saved = localStorage.getItem('galleryVisibility')
+        if (saved) {
+          const settings = JSON.parse(saved)
+          setVisibilitySettings(settings)
+          console.log('✅ Gallery visibility loaded from localStorage (FALLBACK):', settings)
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not load visibility:', error.message)
+      }
+    }
+    
+    loadVisibilitySettings()
+  }, [])
+
+  // Lazy load implementation - no longer needed since using direct src
+  useEffect(() => {
+    // Images now load directly via src attribute
+  }, [loading, media])
+
+  // Close modal with ESC key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && selectedItem) {
+        setSelectedItem(null)
+      }
+    }
+    
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedItem])
+
+  if (loading) {
+    return (
+      <Reveal className="gallery-section page-width">
+        <div className="gallery-header">
+          <p className="section-kicker">04 / See It In Action</p>
+          <h2>Patient Success Stories & Clinic Tour</h2>
+          <p className="section-description">Loading gallery...</p>
+        </div>
+      </Reveal>
+    )
+  }
+
+  // Separate photos and videos
+  const photos = media.filter(item => item.type === 'image')
+  const videos = media.filter(item => item.type === 'video')
+
+  const GalleryCard = ({ item }) => (
+    <div key={item.id} className="col-12 col-sm-6 col-md-4 col-lg-3">
+      <div 
+        className="gallery-card h-100 cursor-pointer position-relative overflow-hidden"
+        onClick={() => setSelectedItem(item)}
+        style={{
+          cursor: 'pointer',
+          borderRadius: '12px',
+          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+          border: '1px solid rgba(255,255,255,0.3)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'translateY(-8px)'
+          e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.2)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'translateY(0)'
+          e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.1)'
+        }}
+      >
+        {item.type === 'video' ? (
+          <div 
+            className="gallery-video-card position-relative w-100"
+            style={{
+              height: '250px',
+              background: getVideoThumbnail(item.url, item.title),
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Video element for thumbnail preview */}
+            <video
+              src={item.url}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+              }}
+              onLoadedMetadata={(e) => {
+                // Video loaded successfully, show it
+                e.target.style.opacity = '1';
+              }}
+              onError={(e) => {
+                // If video fails to load, show gradient
+                e.target.style.opacity = '0';
+              }}
+              crossOrigin="anonymous"
+            />
+            
+            {/* Video overlay gradient */}
+            <div style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'linear-gradient(135deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.3) 100%)',
+              pointerEvents: 'none'
+            }}></div>
+            
+            {/* Play button */}
+            <div className="position-absolute" style={{top: '50%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 2}}>
+              <div 
+                className="rounded-circle d-flex align-items-center justify-content-center"
+                style={{
+                  width: '70px',
+                  height: '70px',
+                  backgroundColor: 'rgba(255,255,255,0.25)',
+                  backdropFilter: 'blur(10px)',
+                  fontSize: '32px',
+                  color: 'white',
+                  border: '2px solid rgba(255,255,255,0.4)',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.4)';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.25)';
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = '0 8px 32px rgba(0,0,0,0.2)';
+                }}
+              >
+                ▶
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="gallery-photo-card position-relative w-100" style={{height: '250px', overflow: 'hidden'}}>
+            <img 
+              src={item.url}
+              alt={item.title}
+              className="w-100 h-100"
+              style={{objectFit: 'cover', opacity: 1, transition: 'opacity 0.4s ease'}}
+              onLoad={(e) => {
+                e.target.style.opacity = '1'
+                e.target.classList.add('loaded')
+              }}
+            />
+          </div>
+        )}
+        <div className="p-3" style={{backgroundColor: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(8px)'}}>
+          <h6 className="mb-0 text-dark" style={{fontSize: '14px', fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
+            {item.title}
+          </h6>
+        </div>
+      </div>
+    </div>
+  )
+
+  // Don't render gallery section if both photos and videos are disabled
+  const hasVisibleContent = (photos.length > 0 && visibilitySettings.photos_visible === 1) || (videos.length > 0 && visibilitySettings.videos_visible === 1)
+  
+  if (!hasVisibleContent) {
+    return null
+  }
+
+  return (
+    <Reveal className="gallery-section page-width">
+      <div className="gallery-header">
+        <p className="section-kicker">04 / See It In Action</p>
+        <h2>Patient Success Stories & Clinic Tour</h2>
+        <p className="section-description">Watch real patient transformations and explore our clinic</p>
+      </div>
+
+      {/* Photos Section */}
+      {photos.length > 0 && visibilitySettings.photos_visible === 1 && (
+        <div className="gallery-section-container mt-5">
+          <div className="gallery-scroll-wrapper">
+            <div className="container-fluid" style={{paddingLeft: '12px', paddingRight: '12px'}}>
+              <div className="row g-3">
+                {photos.map((item) => (
+                  <GalleryCard key={item.id} item={item} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Videos Section */}
+      {videos.length > 0 && visibilitySettings.videos_visible === 1 && (
+        <div className="gallery-section-container mt-5">
+          <div className="gallery-scroll-wrapper">
+            <div className="container-fluid" style={{paddingLeft: '12px', paddingRight: '12px'}}>
+              <div className="row g-3">
+                {videos.map((item) => (
+                  <GalleryCard key={item.id} item={item} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video/Photo Modal Player - Full Screen */}
+      {selectedItem && (
+        <div 
+          className="gallery-modal-backdrop position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+          onClick={() => setSelectedItem(null)}
+          style={{
+            backgroundColor: 'rgba(0,0,0,0.95)',
+            zIndex: 9999,
+            backdropFilter: 'blur(4px)',
+            padding: '0',
+            margin: '0',
+          }}
+        >
+          {/* Close Button */}
+          <button 
+            className="position-fixed"
+            onClick={() => setSelectedItem(null)}
+            style={{
+              top: '20px',
+              right: '30px',
+              zIndex: 10001,
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              border: '2px solid rgba(255,255,255,0.5)',
+              color: 'white',
+              fontSize: '32px',
+              width: '54px',
+              height: '54px',
+              borderRadius: '50%',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.2s ease',
+              fontWeight: 'bold',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.3)';
+              e.currentTarget.style.transform = 'scale(1.15)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.8)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.15)';
+              e.currentTarget.style.transform = 'scale(1)';
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.5)';
+            }}
+            aria-label="Close"
+            title="Close (Press ESC)"
+          >
+            ✕
+          </button>
+          
+          {/* Modal Content */}
+          <div 
+            className="gallery-modal-content position-relative"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              height: '100%',
+              backgroundColor: '#000',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0',
+            }}
+          >
+            {selectedItem.type === 'video' ? (
+              <div style={{width: '90%', height: '90%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'}}>
+                <video 
+                  width="100%" 
+                  height="auto"
+                  controls 
+                  autoPlay
+                  muted
+                  style={{maxHeight: '90vh', maxWidth: '100%', objectFit: 'contain'}}
+                >
+                  <source src={selectedItem.url} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+                <div style={{marginTop: '20px', color: 'white', fontSize: '18px', fontWeight: 'bold', textAlign: 'center'}}>
+                  {selectedItem.title}
+                </div>
+              </div>
+            ) : (
+              <div style={{width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
+                <img 
+                  src={selectedItem.url} 
+                  alt={selectedItem.title}
+                  style={{maxWidth: '95%', maxHeight: '90%', objectFit: 'contain'}}
+                />
+                <div style={{marginTop: '20px', color: 'white', fontSize: '18px', fontWeight: 'bold', textAlign: 'center'}}>
+                  {selectedItem.title}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </Reveal>
+  )
+}
 
 function About({ goTo }) { return <Subpage eyebrow="02 / ABOUT DR. SHELKE'S AURUM HOMEOPATHY" title={<><span className="title-black">A Better Standard of</span> <span className="title-accent">Natural Care in Pimple Saudagar</span></>}><div className="about-layout"><div className="about-gallery"><figure className="about-photo-card about-photo-main"><img src="/assets/dr.imagre.png" alt="Dr. Jayesh Shelke - Homeopathic Doctor in Pimple Saudagar Pune" /></figure></div><div className="about-copy"><p className="lead">We believe true healing begins with understanding the complete individual.</p><p>Led by Dr. Jayesh Shelke, Aurum Homeopathy provides compassionate, root-cause healing for patients across Pimple Saudagar and Pune. Our practice focuses on thorough constitutional case-taking to deliver safe, personalized, and 100% natural care.</p><div className="stats stats-two"><div><strong>6+</strong><small>Years of Clinical Excellence</small></div><div><strong>98%</strong><small>Patient Satisfaction</small></div></div><a className="primary-btn cta-link" href="#contact" onClick={(event) => { event.preventDefault(); goTo('Contact Us'); window.location.hash = '#contact'; }}>Book a Consultation <span>↗</span></a></div></div></Subpage> }
 
@@ -687,7 +1108,7 @@ function StaffLogin({ login }) {
 
   const canShowCreateUser = true // Will be checked in main dashboard
 
-  return <Subpage eyebrow="Staff access / Secure login" title={<>Care team<br /><em>portal.</em></>}><div className="login-layout"><form className="staff-login" onSubmit={showForgotForm ? handleForgotPassword : submit}><label>Email<input name="username" type="text" required autoComplete="username" value={showForgotForm ? forgotEmail : undefined} onChange={(e) => setForgotEmail(e.target.value)} /></label>{!showForgotForm && <label className="password-label">Password<div className="password-field"><input name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" /><button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>👁️</button></div></label>}{error && <p className="form-error">{error}</p>}{forgotMessage && <p className="form-success">{forgotMessage}</p>}<button className="primary-btn" type="submit">{showForgotForm ? 'Send Reset Link' : 'Sign in'} <span>↗</span></button>{!showForgotForm && <button type="button" className="text-btn forgot-link" onClick={() => setShowForgotForm(true)}>Forgot password?</button>}{showForgotForm && <button type="button" className="text-btn" onClick={() => { setShowForgotForm(false); setForgotEmail(''); }}>Back to login</button>}</form><div className="login-info"><span className="big-icon">✦</span><h2>One place for incoming appointments.</h2><p>Doctors can review requests. Super admins can update or remove them.</p><p className="demo-credentials"><strong>Local demo:</strong> doctor / doctor123<br /><strong>Hostinger:</strong> use a user created in the users table</p></div></div></Subpage>
+  return <Subpage eyebrow="Staff access / Secure login" title={<>Care team<br /><em>portal.</em></>}><div className="login-layout"><form className="staff-login" onSubmit={showForgotForm ? handleForgotPassword : submit}><label>Email<input name="username" type="text" required autoComplete="username" value={showForgotForm ? forgotEmail : undefined} onChange={(e) => setForgotEmail(e.target.value)} /></label>{!showForgotForm && <label className="password-label">Password<div className="password-field"><input name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" /><button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>👁️</button></div></label>}{error && <p className="form-error">{error}</p>}{forgotMessage && <p className="form-success">{forgotMessage}</p>}<button className="primary-btn" type="submit">{showForgotForm ? 'Send Reset Link' : 'Sign in'} <span>↗</span></button>{!showForgotForm && <button type="button" className="text-btn forgot-link" onClick={() => setShowForgotForm(true)}>Forgot password?</button>}{showForgotForm && <button type="button" className="text-btn" onClick={() => { setShowForgotForm(false); setForgotEmail(''); }}>Back to login</button>}</form><div className="login-info"><span className="big-icon">✦</span><h2>One place for incoming appointments.</h2><p>Doctors can review requests. Super admins can update or remove them.</p></div></div></Subpage>
 }
 
 function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logout, goTo }) {
@@ -1113,7 +1534,7 @@ function CreateUser({ goTo }) {
   )
 }
 
-function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled, logout, goTo, updateSystemStatus, systemStatus }) {
+function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled, logout, goTo, updateSystemStatus, systemStatus, gallery, setGallery }) {
   const [adminSection, setAdminSection] = useState('dashboard')
   const [message, setMessage] = useState('')
   const [users, setUsers] = useState([])
@@ -1332,6 +1753,9 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
           <button className={`menu-btn ${adminSection === 'users' ? 'active' : ''}`} onClick={() => setAdminSection('users')}>
             👥 Users
           </button>
+          <button className={`menu-btn ${adminSection === 'gallery' ? 'active' : ''}`} onClick={() => setAdminSection('gallery')}>
+            🎬 Gallery
+          </button>
         </div>
 
         {/* DASHBOARD SECTION */}
@@ -1545,8 +1969,581 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
             </table>
           </div>
         )}
+
+        {/* GALLERY SECTION */}
+        {adminSection === 'gallery' && (
+          <div className="admin-section">
+            <h2>🎬 Gallery Management</h2>
+            <GalleryManager gallery={gallery} setGallery={setGallery} />
+          </div>
+        )}
       </div>
     </Subpage>
+  )
+}
+
+function GalleryManager({ gallery, setGallery }) {
+  const [media, setMedia] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [formData, setFormData] = useState({ type: 'image', title: '', description: '', url: '', is_featured: false })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [visibilitySettings, setVisibilitySettings] = useState({ videos_visible: true, photos_visible: true })
+
+  const currentUser = getStoredUser()
+
+  // Load media from database on mount
+  useEffect(() => {
+    loadMedia()
+  }, [])
+
+  const loadMedia = async () => {
+    try {
+      setLoading(true)
+      const baseUrl = getApiBaseUrl()
+      const url = getEndpointUrl(baseUrl, 'media')
+      const response = await fetch(url)
+      if (response.ok) {
+        const result = await response.json()
+        const mediaData = Array.isArray(result) ? result : (result.media || [])
+        setMedia(mediaData)
+        console.log('✅ Media loaded:', mediaData.length, 'items')
+      } else {
+        throw new Error('Failed to fetch media')
+      }
+    } catch (error) {
+      console.error('❌ Failed to load media:', error.message)
+      Swal.fire({
+        icon: 'error',
+        title: 'Load Failed',
+        text: error.message,
+        confirmButtonColor: '#be1010'
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Load visibility settings from API (global) or localStorage fallback
+  useEffect(() => {
+    const loadVisibilitySettings = async () => {
+      try {
+        console.log('📡 Fetching visibility settings from API...')
+        const response = await fetch('http://localhost:3001/gallery-settings-get')
+        if (response.ok) {
+          const settings = await response.json()
+          setVisibilitySettings(settings)
+          localStorage.setItem('galleryVisibility', JSON.stringify(settings))
+          console.log('✅ Gallery visibility loaded from API (GLOBAL):', settings)
+          return
+        }
+      } catch (error) {
+        console.warn('⚠️ API failed, trying localStorage fallback:', error.message)
+      }
+      
+      // Fallback to localStorage if API fails
+      try {
+        const saved = localStorage.getItem('galleryVisibility')
+        if (saved) {
+          const settings = JSON.parse(saved)
+          setVisibilitySettings(settings)
+          console.log('✅ Gallery visibility loaded from localStorage (FALLBACK):', settings)
+        }
+      } catch (error) {
+        console.warn('⚠️ Could not load visibility:', error.message)
+      }
+    }
+    
+    loadVisibilitySettings()
+  }, [])
+
+  const handleAdd = async () => {
+    if (!formData.title.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Title Required',
+        text: 'Please enter a title for this media',
+        confirmButtonColor: '#be1010'
+      })
+      return
+    }
+
+    if (!formData.url.trim()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'URL Required',
+        text: 'Please enter a valid URL for this media',
+        confirmButtonColor: '#be1010'
+      })
+      return
+    }
+
+    try {
+      setSaving(true)
+      const baseUrl = getApiBaseUrl()
+      const endpoint = editingId ? `media/${editingId}` : 'media'
+      const method = editingId ? 'PUT' : 'POST'
+      
+      const payload = {
+        title: formData.title.trim(),
+        type: formData.type,
+        url: formData.url.trim(),
+        description: formData.description.trim(),
+        is_featured: formData.is_featured ? 1 : 0
+      }
+
+      console.log('📤 Saving media:', payload)
+      
+      const response = await fetch(getEndpointUrl(baseUrl, endpoint), {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+
+      const result = await response.json()
+      console.log('📥 Server response:', result)
+
+      if (response.ok) {
+        Swal.fire({
+          icon: 'success',
+          title: editingId ? 'Updated!' : 'Added!',
+          text: editingId ? '✅ Media updated successfully!' : '✅ Media added successfully!',
+          confirmButtonColor: '#be1010'
+        }).then(() => {
+          resetForm()
+          loadMedia()
+        })
+      } else {
+        throw new Error(result.error || 'Failed to save media')
+      }
+    } catch (error) {
+      console.error('❌ Error saving media:', error)
+      Swal.fire({
+        icon: 'error',
+        title: 'Save Failed',
+        text: error.message,
+        confirmButtonColor: '#be1010'
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleEdit = (item) => {
+    console.log('✏️ Editing media:', item)
+    setFormData({
+      type: item.type || 'image',
+      title: item.title || '',
+      description: item.description || '',
+      url: item.url || '',
+      is_featured: item.is_featured ? true : false
+    })
+    setEditingId(item.id)
+    setShowForm(true)
+  }
+
+  const handleDelete = async (id) => {
+    try {
+      const result = await Swal.fire({
+        icon: 'warning',
+        title: 'Delete Media?',
+        text: 'This action cannot be undone!',
+        showCancelButton: true,
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#d32f2f',
+        cancelButtonColor: '#999'
+      })
+
+      if (!result.isConfirmed) {
+        console.log('⏸️ Delete cancelled by user')
+        return
+      }
+
+      setSaving(true)
+      const baseUrl = getApiBaseUrl()
+      
+      console.log('🗑️ Deleting media ID:', id)
+      
+      const response = await fetch(getEndpointUrl(baseUrl, `media/${id}`), {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      console.log('📥 Delete response status:', response.status)
+      
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to delete media')
+      }
+
+      const result2 = await response.json()
+      console.log('✅ Delete successful:', result2)
+
+      await Swal.fire({
+        icon: 'success',
+        title: 'Deleted!',
+        text: '✅ Media deleted successfully!',
+        confirmButtonColor: '#be1010'
+      })
+
+      setSaving(false)
+      await loadMedia()
+      
+    } catch (error) {
+      setSaving(false)
+      console.error('❌ Error deleting media:', error.message)
+      Swal.fire({
+        icon: 'error',
+        title: 'Delete Failed',
+        text: error.message,
+        confirmButtonColor: '#be1010'
+      })
+    }
+  }
+
+  const resetForm = () => {
+    setFormData({ type: 'image', title: '', description: '', url: '', is_featured: false })
+    setEditingId(null)
+    setShowForm(false)
+  }
+
+  const filteredMedia = media.filter(m => {
+    const query = searchQuery.toLowerCase()
+    return m.title.toLowerCase().includes(query) || (m.description && m.description.toLowerCase().includes(query))
+  })
+  
+  const videos = filteredMedia.filter(m => m.type === 'video')
+  const photos = filteredMedia.filter(m => m.type === 'image')
+
+  // Toggle visibility of sections (saves to database globally)
+  const handleToggleVisibility = async (key) => {
+    try {
+      const newValue = !visibilitySettings[key];
+      const updatedSettings = { ...visibilitySettings, [key]: newValue };
+      
+      // Update UI immediately for responsive feel
+      setVisibilitySettings(updatedSettings);
+      
+      try {
+        // Save to database (GLOBAL - all users see same state)
+        console.log(`📝 Saving ${key} = ${newValue} to database...`);
+        const response = await fetch('http://localhost:3001/gallery-settings-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key, value: newValue })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          // Save to localStorage as backup
+          localStorage.setItem('galleryVisibility', JSON.stringify(updatedSettings));
+          
+          const sectionName = key === 'videos_visible' ? 'Video' : 'Photo';
+          Swal.fire({
+            icon: 'success',
+            title: '✅ Updated Globally!',
+            text: `${sectionName} section is now ${newValue ? 'VISIBLE' : 'HIDDEN'} for all users!`,
+            confirmButtonColor: '#be1010',
+            timer: 1500
+          });
+          console.log(`✅ ${key} saved to database (GLOBAL):`, result);
+        } else {
+          // API failed, show warning but keep localStorage backup
+          localStorage.setItem('galleryVisibility', JSON.stringify(updatedSettings));
+          console.warn(`⚠️ API error (${response.status}), saved to localStorage as fallback`);
+          Swal.fire({
+            icon: 'warning',
+            title: 'Saved Locally',
+            text: `${key === 'videos_visible' ? 'Video' : 'Photo'} setting saved locally (may not sync to other users)`,
+            confirmButtonColor: '#be1010',
+            timer: 2000
+          });
+        }
+      } catch (apiError) {
+        // Network error, fallback to localStorage
+        localStorage.setItem('galleryVisibility', JSON.stringify(updatedSettings));
+        console.warn('⚠️ Network error, saved to localStorage as fallback:', apiError.message);
+        Swal.fire({
+          icon: 'warning',
+          title: 'Saved Locally',
+          text: 'Network error - setting saved locally only',
+          confirmButtonColor: '#be1010',
+          timer: 2000
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error updating visibility:', error.message);
+      Swal.fire({
+        icon: 'error',
+        title: 'Error',
+        text: 'Could not update visibility: ' + error.message,
+        confirmButtonColor: '#be1010'
+      });
+    }
+  }
+
+  return (
+    <div className="media-management-section" style={{padding: '20px', borderRadius: '12px'}}>
+      <div className="media-management-header" style={{marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px'}}>
+        <h2 style={{fontSize: '24px', fontWeight: '700', color: '#1d1d1d', margin: '0'}}>📸 Manage Gallery</h2>
+        <button 
+          className="media-add-btn" 
+          onClick={() => setShowForm(!showForm)} 
+          disabled={saving}
+          style={{padding: '12px 24px', background: 'linear-gradient(135deg, #be1010 0%, #ff4444 100%)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1}}>
+          {saving ? '⏳ Processing...' : (showForm ? '✕ Cancel' : '➕ Add Media')}
+        </button>
+      </div>
+
+      {/* Search Bar */}
+      <div style={{marginBottom: '24px', padding: '16px', background: 'white', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)'}}>
+        <input 
+          type="text"
+          placeholder="🔍 Search media by title or description..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          style={{width: '100%', padding: '12px 16px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', fontFamily: "'Plus Jakarta Sans', sans-serif"}}
+        />
+        {searchQuery && (
+          <small style={{display: 'block', marginTop: '8px', color: '#999', fontSize: '12px'}}>
+            Found: {videos.length} video(s), {photos.length} photo(s) • {filteredMedia.length} total result(s)
+          </small>
+        )}
+      </div>
+
+      {/* Visibility Settings */}
+      <div style={{marginBottom: '24px', padding: '16px', background: 'linear-gradient(135deg, rgba(79, 172, 254, 0.08) 0%, rgba(67, 233, 123, 0.08) 100%)', borderRadius: '12px', border: '2px solid rgba(79, 172, 254, 0.2)'}}>
+        <h4 style={{fontSize: '16px', fontWeight: '700', color: '#1d1d1d', margin: '0 0 16px 0'}}>👁️ Section Visibility</h4>
+        <div style={{display: 'flex', gap: '12px', flexWrap: 'wrap'}}>
+          <button
+            onClick={() => handleToggleVisibility('videos_visible')}
+            style={{
+              flex: '1',
+              minWidth: '180px',
+              padding: '12px 16px',
+              background: visibilitySettings.videos_visible === 1 ? 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)' : '#f5f5f5',
+              color: visibilitySettings.videos_visible === 1 ? 'white' : '#999',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              fontSize: '14px',
+              boxShadow: visibilitySettings.videos_visible === 1 ? '0 4px 12px rgba(67, 233, 123, 0.3)' : 'none',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.opacity = '0.9';
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.opacity = '1';
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
+            {visibilitySettings.videos_visible === 1 ? '🎥 Videos: VISIBLE' : '🎥 Videos: HIDDEN'}
+          </button>
+          <button
+            onClick={() => handleToggleVisibility('photos_visible')}
+            style={{
+              flex: '1',
+              minWidth: '180px',
+              padding: '12px 16px',
+              background: visibilitySettings.photos_visible === 1 ? 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)' : '#f5f5f5',
+              color: visibilitySettings.photos_visible === 1 ? 'white' : '#999',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: '700',
+              cursor: 'pointer',
+              fontSize: '14px',
+              boxShadow: visibilitySettings.photos_visible === 1 ? '0 4px 12px rgba(79, 172, 254, 0.3)' : 'none',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.opacity = '0.9';
+              e.target.style.transform = 'translateY(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.opacity = '1';
+              e.target.style.transform = 'translateY(0)';
+            }}
+          >
+            {visibilitySettings.photos_visible === 1 ? '📷 Photos: VISIBLE' : '📷 Photos: HIDDEN'}
+          </button>
+        </div>
+      </div>
+
+      {/* Add/Edit Form */}
+      {showForm && (
+        <div className="media-form" style={{background: 'white', padding: '24px', borderRadius: '12px', marginBottom: '32px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'}}>
+          <h3 style={{fontSize: '18px', fontWeight: '700', marginBottom: '20px', color: '#1d1d1d'}}>{editingId ? '✏️ Edit Media' : '➕ Add New Media'}</h3>
+
+          <div className="media-form-row" style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px'}}>
+            <div className="media-form-group">
+              <label style={{display: 'block', fontWeight: '600', color: '#1d1d1d', marginBottom: '8px'}}>Type</label>
+              <select 
+                value={formData.type}
+                onChange={(e) => setFormData({...formData, type: e.target.value})}
+                disabled={saving}
+                style={{width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', cursor: saving ? 'not-allowed' : 'pointer'}}
+              >
+                <option value="image">📷 Photo</option>
+                <option value="video">🎬 Video</option>
+              </select>
+            </div>
+
+            <div className="media-form-group">
+              <label style={{display: 'block', fontWeight: '600', color: '#1d1d1d', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                <input 
+                  type="checkbox" 
+                  checked={formData.is_featured}
+                  onChange={(e) => setFormData({...formData, is_featured: e.target.checked})}
+                  disabled={saving}
+                  style={{width: '18px', height: '18px', cursor: saving ? 'not-allowed' : 'pointer', margin: '0'}}
+                />
+                ⭐ Featured (Homepage)
+              </label>
+            </div>
+          </div>
+
+          <div className="media-form-group" style={{marginBottom: '16px'}}>
+            <label style={{display: 'block', fontWeight: '600', color: '#1d1d1d', marginBottom: '8px'}}>Title *</label>
+            <input 
+              type="text" 
+              placeholder="e.g., Patient Success Story"
+              value={formData.title}
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
+              disabled={saving}
+              style={{width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', cursor: saving ? 'not-allowed' : 'text'}}
+            />
+          </div>
+
+          <div className="media-form-group" style={{marginBottom: '16px'}}>
+            <label style={{display: 'block', fontWeight: '600', color: '#1d1d1d', marginBottom: '8px'}}>Description</label>
+            <textarea 
+              placeholder="Describe this content..."
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
+              disabled={saving}
+              style={{width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', minHeight: '100px', fontFamily: "'Plus Jakarta Sans', sans-serif", cursor: saving ? 'not-allowed' : 'text'}}
+            />
+          </div>
+
+          <div className="media-form-group" style={{marginBottom: '24px'}}>
+            <label style={{display: 'block', fontWeight: '600', color: '#1d1d1d', marginBottom: '8px'}}>
+              {formData.type === 'video' ? '🎥 Video URL *' : '🖼️ Image URL *'}
+            </label>
+            <input 
+              type="text" 
+              placeholder={formData.type === 'video' ? 'https://www.w3schools.com/html/movie.mp4' : 'https://picsum.photos/600/400?random=1'}
+              value={formData.url}
+              onChange={(e) => setFormData({...formData, url: e.target.value})}
+              disabled={saving}
+              style={{width: '100%', padding: '12px', border: '1px solid #ddd', borderRadius: '8px', fontSize: '14px', cursor: saving ? 'not-allowed' : 'text'}}
+            />
+            <small style={{display: 'block', marginTop: '6px', color: '#999'}}>URL-only storage • No file uploads</small>
+          </div>
+
+          <div className="media-form-actions" style={{display: 'flex', gap: '12px'}}>
+            <button 
+              className="media-form-btn-primary" 
+              onClick={handleAdd}
+              disabled={saving}
+              style={{flex: 1, padding: '12px 24px', background: saving ? '#ccc' : 'linear-gradient(135deg, #be1010 0%, #ff4444 100%)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer'}}>
+              {saving ? '⏳ ' + (editingId ? 'Updating...' : 'Adding...') : (editingId ? '💾 Update Media' : '✅ Add Media')}
+            </button>
+            <button 
+              className="media-form-btn-secondary" 
+              onClick={resetForm}
+              disabled={saving}
+              style={{flex: 1, padding: '12px 24px', background: 'white', color: '#1d1d1d', border: '2px solid #ddd', borderRadius: '8px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.5 : 1}}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading ? (
+        <div style={{textAlign: 'center', padding: '60px 20px', fontSize: '48px'}}>
+          ⏳ Loading media...
+        </div>
+      ) : (
+        <>
+          {/* Videos Section */}
+          {videos.length > 0 && (
+            <div className="media-videos-section" style={{marginBottom: '48px'}}>
+              <div className="media-section-header" style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', borderBottom: '2px solid rgba(190, 16, 16, 0.2)', paddingBottom: '16px'}}>
+                <h3 style={{fontSize: '20px', fontWeight: '700', color: '#1d1d1d', margin: '0'}}>🎬 Videos ({videos.length})</h3>
+              </div>
+              <div className="media-list" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px'}}>
+                {videos.map(item => (
+                  <div key={item.id} className="media-item" style={{background: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', position: 'relative'}}>
+                    {item.is_featured && <div className="media-item-featured" style={{position: 'absolute', top: '8px', left: '8px', background: 'rgba(255, 215, 0, 0.9)', color: '#1d1d1d', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', zIndex: '10'}}>⭐ Featured</div>}
+                    <div className="media-item-thumbnail" style={{width: '100%', height: '160px', background: 'linear-gradient(135deg, rgba(248, 243, 238, 0.5) 0%, rgba(249, 234, 41, 0.1) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative'}}>
+                      <span style={{fontSize: '64px', opacity: '0.3'}}>🎬</span>
+                      <span className="media-item-type-badge" style={{position: 'absolute', top: '8px', right: '8px', background: 'rgba(190, 16, 16, 0.9)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: '700'}}>VIDEO</span>
+                    </div>
+                    <div className="media-item-content" style={{padding: '16px'}}>
+                      <h4 className="media-item-title" style={{fontSize: '15px', fontWeight: '700', color: '#1d1d1d', margin: '0 0 8px'}}>{item.title}</h4>
+                      <p className="media-item-description" style={{fontSize: '12px', color: '#999', margin: '0 0 12px', lineHeight: '1.5'}}>{item.description || 'No description'}</p>
+                      <small className="media-item-meta" style={{fontSize: '11px', color: '#bbb', display: 'block', marginBottom: '12px'}}>Added: {new Date(item.created_at).toLocaleDateString()}</small>
+                      <div className="media-item-actions" style={{display: 'flex', gap: '8px'}}>
+                        <button onClick={() => handleEdit(item)} disabled={saving} style={{flex: 1, padding: '8px 12px', border: '1px solid #eee', background: '#fafafa', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1}}>✏️ Edit</button>
+                        <button onClick={() => handleDelete(item.id)} disabled={saving} style={{flex: 1, padding: '8px 12px', border: '1px solid #ffcccc', background: '#fff5f5', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer', color: '#d32f2f', opacity: saving ? 0.6 : 1}}>🗑️ Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Photos Section */}
+          {photos.length > 0 && (
+            <div className="media-photos-section" style={{marginBottom: '48px'}}>
+              <div className="media-section-header" style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px', borderBottom: '2px solid rgba(190, 16, 16, 0.2)', paddingBottom: '16px'}}>
+                <h3 style={{fontSize: '20px', fontWeight: '700', color: '#1d1d1d', margin: '0'}}>📷 Photos ({photos.length})</h3>
+              </div>
+              <div className="media-list" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px'}}>
+                {photos.map(item => (
+                  <div key={item.id} className="media-item" style={{background: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)', position: 'relative'}}>
+                    {item.is_featured && <div className="media-item-featured" style={{position: 'absolute', top: '8px', left: '8px', background: 'rgba(255, 215, 0, 0.9)', color: '#1d1d1d', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: '700', zIndex: '10'}}>⭐ Featured</div>}
+                    <div className="media-item-thumbnail" style={{width: '100%', height: '160px', background: '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden'}}>
+                      <img src={item.url} alt={item.title} style={{width: '100%', height: '100%', objectFit: 'cover'}} onError={(e) => { e.target.style.display = 'none' }} />
+                      <span className="media-item-type-badge" style={{position: 'absolute', top: '8px', right: '8px', background: 'rgba(33, 150, 243, 0.9)', color: 'white', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: '700'}}>PHOTO</span>
+                    </div>
+                    <div className="media-item-content" style={{padding: '16px'}}>
+                      <h4 className="media-item-title" style={{fontSize: '15px', fontWeight: '700', color: '#1d1d1d', margin: '0 0 8px'}}>{item.title}</h4>
+                      <p className="media-item-description" style={{fontSize: '12px', color: '#999', margin: '0 0 12px', lineHeight: '1.5'}}>{item.description || 'No description'}</p>
+                      <small className="media-item-meta" style={{fontSize: '11px', color: '#bbb', display: 'block', marginBottom: '12px'}}>Added: {new Date(item.created_at).toLocaleDateString()}</small>
+                      <div className="media-item-actions" style={{display: 'flex', gap: '8px'}}>
+                        <button onClick={() => handleEdit(item)} disabled={saving} style={{flex: 1, padding: '8px 12px', border: '1px solid #eee', background: '#fafafa', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1}}>✏️ Edit</button>
+                        <button onClick={() => handleDelete(item.id)} disabled={saving} style={{flex: 1, padding: '8px 12px', border: '1px solid #ffcccc', background: '#fff5f5', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer', color: '#d32f2f', opacity: saving ? 0.6 : 1}}>🗑️ Delete</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {media.length === 0 && (
+            <div className="media-empty-state" style={{textAlign: 'center', padding: '60px 20px', background: 'white', borderRadius: '12px', border: '2px dashed #ddd'}}>
+              <div className="media-empty-state-icon" style={{fontSize: '64px', marginBottom: '16px', opacity: '0.5'}}>🎬</div>
+              <h3 style={{fontSize: '18px', fontWeight: '700', color: '#1d1d1d', margin: '0 0 8px'}}>No Media Yet</h3>
+              <p style={{color: '#999', margin: '0 0 20px'}}>Add videos and photos to showcase your clinic</p>
+              <button onClick={() => setShowForm(true)} disabled={saving} style={{padding: '12px 24px', background: 'linear-gradient(135deg, #be1010 0%, #ff4444 100%)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer'}}>
+                ➕ Add First Media
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
   )
 }
 

@@ -168,6 +168,49 @@ async function initializeRBAC() {
       }
     }
     
+    // Initialize gallery settings table
+    try {
+      const [settingsTables] = await conn.execute(`
+        SELECT TABLE_NAME FROM information_schema.TABLES 
+        WHERE TABLE_SCHEMA = 'u154384799_Ahc' AND TABLE_NAME = 'gallery_settings'
+      `);
+      
+      if (settingsTables.length === 0) {
+        console.log('[INIT] Creating gallery_settings table...');
+        await conn.execute(`
+          CREATE TABLE IF NOT EXISTS gallery_settings (
+            id INT PRIMARY KEY AUTO_INCREMENT,
+            setting_key VARCHAR(50) UNIQUE NOT NULL,
+            setting_value INT NOT NULL DEFAULT 1,
+            description VARCHAR(255),
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+          )
+        `);
+        
+        // Insert default settings
+        await conn.execute(`
+          INSERT IGNORE INTO gallery_settings (setting_key, setting_value, description)
+          VALUES 
+            ('videos_visible', 1, 'Show/Hide video section'),
+            ('photos_visible', 1, 'Show/Hide photo section')
+        `);
+        
+        console.log('[INIT] ✅ Gallery settings table created successfully');
+      } else {
+        console.log('[INIT] ✅ Gallery settings table already exists');
+        
+        // Ensure default settings exist
+        await conn.execute(`
+          INSERT IGNORE INTO gallery_settings (setting_key, setting_value, description)
+          VALUES 
+            ('videos_visible', 1, 'Show/Hide video section'),
+            ('photos_visible', 1, 'Show/Hide photo section')
+        `);
+      }
+    } catch (e) {
+      console.error('[INIT] ❌ Gallery settings initialization error:', e.message);
+    }
+    
     conn.release();
   } catch (error) {
     console.error('[INIT] ❌ RBAC initialization error:', error.message);
@@ -946,12 +989,6 @@ app.get('/test/full', async (req, res) => {
   }
 });
 
-// Error handler middleware
-app.use((err, req, res, next) => {
-  console.error('[SERVER ERROR]', err);
-  res.status(500).json({ error: 'Server error: ' + err.message });
-});
-
 // Temporary fix roles endpoint
 app.get('/fix-test-roles', async (req, res) => {
   try {
@@ -1059,6 +1096,533 @@ app.post('/setup/clean', async (req, res) => {
     console.error('[SETUP ERROR]', error.message);
     res.status(500).json({ error: 'Setup failed', message: error.message });
   }
+});
+
+// Setup endpoint: Create media table if it doesn't exist
+app.post('/setup/create-media-table', async (req, res) => {
+  try {
+    console.log('[SETUP] Creating media table...');
+    const connection = await pool.getConnection();
+
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS media (
+        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description LONGTEXT,
+        type ENUM('image', 'video') NOT NULL DEFAULT 'image',
+        url TEXT NOT NULL,
+        thumbnail_url TEXT,
+        is_featured BOOLEAN DEFAULT FALSE,
+        display_order INT DEFAULT 0,
+        created_by INT UNSIGNED,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        
+        INDEX idx_type (type),
+        INDEX idx_is_featured (is_featured),
+        INDEX idx_display_order (display_order),
+        FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    connection.release();
+    console.log('[SETUP] Media table created successfully');
+    res.json({
+      success: true,
+      message: '✨ Media table created successfully!'
+    });
+  } catch (error) {
+    console.error('[SETUP ERROR]', error.message);
+    res.status(500).json({ error: 'Setup failed', message: error.message });
+  }
+});
+
+// Setup endpoint: Add demo media for testing
+app.post('/setup/demo-media', async (req, res) => {
+  try {
+    console.log('[SETUP] Starting demo media insertion...');
+    const connection = await pool.getConnection();
+
+    const demoVideos = [
+      { title: 'Homeopathy Treatment Success Story', type: 'video', url: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+      { title: 'Dr. Consultation Session', type: 'video', url: 'https://www.w3schools.com/html/movie.mp4' },
+      { title: 'Chronic Pain Relief Case', type: 'video', url: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+      { title: 'Skin Condition Improvement', type: 'video', url: 'https://www.w3schools.com/html/movie.mp4' },
+      { title: 'Clinic Tour and Facilities', type: 'video', url: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+      { title: 'Women\'s Health Treatment', type: 'video', url: 'https://www.w3schools.com/html/movie.mp4' },
+      { title: 'Allergy Management Session', type: 'video', url: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+      { title: 'Child Immunity Boost Program', type: 'video', url: 'https://www.w3schools.com/html/movie.mp4' },
+      { title: 'Digestive Health Treatment', type: 'video', url: 'https://www.w3schools.com/html/mov_bbb.mp4' },
+      { title: 'Patient Reviews and Testimonials', type: 'video', url: 'https://www.w3schools.com/html/movie.mp4' }
+    ];
+
+    const demoPhotos = [
+      { title: 'Modern Clinic Interior', type: 'image', url: 'https://picsum.photos/600/400?random=1' },
+      { title: 'Treatment Room Setup', type: 'image', url: 'https://picsum.photos/600/400?random=2' },
+      { title: 'Homeopathic Medicines', type: 'image', url: 'https://picsum.photos/600/400?random=3' },
+      { title: 'Patient Waiting Area', type: 'image', url: 'https://picsum.photos/600/400?random=4' },
+      { title: 'Consultation Setup', type: 'image', url: 'https://picsum.photos/600/400?random=5' },
+      { title: 'Medical Equipment', type: 'image', url: 'https://picsum.photos/600/400?random=6' },
+      { title: 'Clinic Exterior', type: 'image', url: 'https://picsum.photos/600/400?random=7' },
+      { title: 'Health Records Storage', type: 'image', url: 'https://picsum.photos/600/400?random=8' },
+      { title: 'Sterilization Station', type: 'image', url: 'https://picsum.photos/600/400?random=9' },
+      { title: 'Doctor\'s Office', type: 'image', url: 'https://picsum.photos/600/400?random=10' }
+    ];
+
+    let addedCount = 0;
+
+    // Insert videos
+    for (const video of demoVideos) {
+      try {
+        await connection.execute(
+          `INSERT INTO media (title, type, url) 
+           VALUES (?, ?, ?)`,
+          [video.title, video.type, video.url]
+        );
+        addedCount++;
+        console.log(`[SETUP] ✅ Added video: ${video.title}`);
+      } catch (error) {
+        console.error(`[SETUP] ❌ Failed to add video ${video.title}:`, error.message);
+      }
+    }
+
+    // Insert photos
+    for (const photo of demoPhotos) {
+      try {
+        await connection.execute(
+          `INSERT INTO media (title, type, url) 
+           VALUES (?, ?, ?)`,
+          [photo.title, photo.type, photo.url]
+        );
+        addedCount++;
+        console.log(`[SETUP] ✅ Added photo: ${photo.title}`);
+      } catch (error) {
+        console.error(`[SETUP] ❌ Failed to add photo ${photo.title}:`, error.message);
+      }
+    }
+
+    connection.release();
+
+    console.log(`[SETUP] Complete! ${addedCount} media items added.`);
+    res.json({
+      success: true,
+      message: `✨ Demo media setup complete! Added ${addedCount} media items (10 videos + 10 photos).`,
+      itemsAdded: addedCount
+    });
+  } catch (error) {
+    console.error('[SETUP ERROR]', error.message);
+    res.status(500).json({ error: 'Setup failed', message: error.message });
+  }
+});
+
+// ====== MEDIA GALLERY MANAGEMENT ENDPOINTS ======
+
+// Get all media (public - anyone can view)
+app.get('/media', async (req, res) => {
+  try {
+    console.log('📸 [GET_MEDIA] Fetching all media items...');
+    const connection = await pool.getConnection();
+    
+    const [media] = await connection.execute(`
+      SELECT 
+        id,
+        title,
+        description,
+        type,
+        url,
+        thumbnail_url,
+        is_featured,
+        display_order,
+        created_by,
+        created_at,
+        updated_at
+      FROM media
+      ORDER BY created_at DESC, id DESC
+    `);
+    
+    connection.release();
+    console.log('✅ [GET_MEDIA] Found', media.length, 'media items');
+    res.json(media);
+  } catch (error) {
+    console.error('❌ [GET_MEDIA] ERROR:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get single media item
+app.get('/media/:id', async (req, res) => {
+  try {
+    const mediaId = req.params.id;
+    console.log('📸 [GET_MEDIA_SINGLE] Fetching media ID:', mediaId);
+    
+    const connection = await pool.getConnection();
+    
+    const [media] = await connection.execute(`
+      SELECT 
+        id,
+        title,
+        type,
+        url
+      FROM media
+      WHERE id = ?
+    `, [mediaId]);
+    
+    connection.release();
+    
+    if (media.length === 0) {
+      console.warn('⚠️ [GET_MEDIA_SINGLE] Media not found:', mediaId);
+      return res.status(404).json({ error: 'Media not found' });
+    }
+    
+    console.log('✅ [GET_MEDIA_SINGLE] Found:', media[0].title);
+    res.json(media[0]);
+  } catch (error) {
+    console.error('❌ [GET_MEDIA_SINGLE] ERROR:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create media (Admin & Super Admin only)
+app.post('/media', async (req, res) => {
+  try {
+    const { title, description, type, url, thumbnail_url, is_featured, display_order, created_by } = req.body;
+    
+    console.log('📸 [CREATE_MEDIA] Creating new media:', { title, type });
+    
+    if (!title || !type || !url) {
+      console.warn('⚠️ [CREATE_MEDIA] Missing required fields');
+      return res.status(422).json({ error: 'Title, type, and URL are required' });
+    }
+    
+    if (!['image', 'video'].includes(type)) {
+      console.warn('⚠️ [CREATE_MEDIA] Invalid type:', type);
+      return res.status(422).json({ error: 'Type must be "image" or "video"' });
+    }
+    
+    const connection = await pool.getConnection();
+    
+    // Check if user exists and has admin/super_admin role
+    if (created_by) {
+      const [userRoles] = await connection.execute(`
+        SELECT r.name FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.id
+        WHERE ur.user_id = ?
+      `, [created_by]);
+      
+      const roles = userRoles.map(r => r.name);
+      if (!roles.includes('admin') && !roles.includes('super_admin')) {
+        connection.release();
+        console.warn('⚠️ [CREATE_MEDIA] User not authorized:', created_by);
+        return res.status(403).json({ error: 'Only admin and super_admin can create media' });
+      }
+    }
+    
+    const [result] = await connection.execute(`
+      INSERT INTO media (title, description, type, url, thumbnail_url, is_featured, display_order, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      title,
+      description || null,
+      type,
+      url,
+      thumbnail_url || null,
+      is_featured ? 1 : 0,
+      display_order || 0,
+      created_by || null
+    ]);
+    
+    connection.release();
+    
+    console.log('✅ [CREATE_MEDIA] Media created with ID:', result.insertId);
+    res.status(201).json({ 
+      message: '✅ Media created successfully!',
+      mediaId: result.insertId
+    });
+  } catch (error) {
+    console.error('❌ [CREATE_MEDIA] ERROR:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update media (Admin & Super Admin only)
+app.put('/media/:id', async (req, res) => {
+  try {
+    const mediaId = req.params.id;
+    const { title, description, type, url, thumbnail_url, is_featured, display_order, updated_by } = req.body;
+    
+    console.log('📸 [UPDATE_MEDIA] Updating media ID:', mediaId);
+    
+    const connection = await pool.getConnection();
+    
+    // Verify user authorization
+    if (updated_by) {
+      const [userRoles] = await connection.execute(`
+        SELECT r.name FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.id
+        WHERE ur.user_id = ?
+      `, [updated_by]);
+      
+      const roles = userRoles.map(r => r.name);
+      if (!roles.includes('admin') && !roles.includes('super_admin')) {
+        connection.release();
+        console.warn('⚠️ [UPDATE_MEDIA] User not authorized:', updated_by);
+        return res.status(403).json({ error: 'Only admin and super_admin can update media' });
+      }
+    }
+    
+    // Build dynamic update query
+    const updates = [];
+    const params = [];
+    
+    if (title !== undefined) {
+      updates.push('title = ?');
+      params.push(title);
+    }
+    if (description !== undefined) {
+      updates.push('description = ?');
+      params.push(description);
+    }
+    if (type !== undefined) {
+      updates.push('type = ?');
+      params.push(type);
+    }
+    if (url !== undefined) {
+      updates.push('url = ?');
+      params.push(url);
+    }
+    if (thumbnail_url !== undefined) {
+      updates.push('thumbnail_url = ?');
+      params.push(thumbnail_url);
+    }
+    if (is_featured !== undefined) {
+      updates.push('is_featured = ?');
+      params.push(is_featured ? 1 : 0);
+    }
+    if (display_order !== undefined) {
+      updates.push('display_order = ?');
+      params.push(display_order);
+    }
+    
+    if (updates.length === 0) {
+      connection.release();
+      return res.status(422).json({ error: 'At least one field required for update' });
+    }
+    
+    // Always update the timestamp
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+    params.push(mediaId);
+    
+    const query = `UPDATE media SET ${updates.join(', ')} WHERE id = ?`;
+    const [result] = await connection.execute(query, params);
+    
+    connection.release();
+    
+    if (result.affectedRows === 0) {
+      console.warn('⚠️ [UPDATE_MEDIA] Media not found:', mediaId);
+      return res.status(404).json({ error: 'Media not found' });
+    }
+    
+    console.log('✅ [UPDATE_MEDIA] Media ID', mediaId, 'updated successfully');
+    res.json({ message: '✅ Media updated successfully!' });
+  } catch (error) {
+    console.error('❌ [UPDATE_MEDIA] ERROR:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete media (Admin & Super Admin only)
+app.delete('/media/:id', async (req, res) => {
+  try {
+    const mediaId = req.params.id;
+    const deleted_by = req.body?.deleted_by;
+    
+    console.log('📸 [DELETE_MEDIA] Deleting media ID:', mediaId);
+    
+    const connection = await pool.getConnection();
+    
+    // Verify user authorization
+    if (deleted_by) {
+      const [userRoles] = await connection.execute(`
+        SELECT r.name FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.id
+        WHERE ur.user_id = ?
+      `, [deleted_by]);
+      
+      const roles = userRoles.map(r => r.name);
+      if (!roles.includes('admin') && !roles.includes('super_admin')) {
+        connection.release();
+        console.warn('⚠️ [DELETE_MEDIA] User not authorized:', deleted_by);
+        return res.status(403).json({ error: 'Only admin and super_admin can delete media' });
+      }
+    }
+    
+    const [result] = await connection.execute('DELETE FROM media WHERE id = ?', [mediaId]);
+    connection.release();
+    
+    if (result.affectedRows === 0) {
+      console.warn('⚠️ [DELETE_MEDIA] Media not found:', mediaId);
+      return res.status(404).json({ error: 'Media not found' });
+    }
+    
+    console.log('✅ [DELETE_MEDIA] Media ID', mediaId, 'deleted successfully');
+    res.json({ message: '✅ Media deleted successfully!' });
+  } catch (error) {
+    console.error('❌ [DELETE_MEDIA] ERROR:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Reorder media (Admin & Super Admin only)
+app.put('/media/reorder/all', async (req, res) => {
+  try {
+    const { items, updated_by } = req.body;
+    
+    console.log('📸 [REORDER_MEDIA] Reordering', items.length, 'items');
+    
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(422).json({ error: 'Items array required' });
+    }
+    
+    const connection = await pool.getConnection();
+    
+    // Verify user authorization
+    if (updated_by) {
+      const [userRoles] = await connection.execute(`
+        SELECT r.name FROM user_roles ur
+        JOIN roles r ON ur.role_id = r.id
+        WHERE ur.user_id = ?
+      `, [updated_by]);
+      
+      const roles = userRoles.map(r => r.name);
+      if (!roles.includes('admin') && !roles.includes('super_admin')) {
+        connection.release();
+        return res.status(403).json({ error: 'Only admin and super_admin can reorder media' });
+      }
+    }
+    
+    // Update display_order for each item
+    for (const item of items) {
+      await connection.execute(
+        'UPDATE media SET display_order = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+        [item.order, item.id]
+      );
+    }
+    
+    connection.release();
+    
+    console.log('✅ [REORDER_MEDIA] Successfully reordered', items.length, 'items');
+    res.json({ message: '✅ Media reordered successfully!' });
+  } catch (error) {
+    console.error('❌ [REORDER_MEDIA] ERROR:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ====== GALLERY VISIBILITY SETTINGS ======
+
+// Initialize gallery settings table (call this once)
+app.post('/setup/init-gallery-settings', async (req, res) => {
+  try {
+    const connection = await pool.getConnection();
+    
+    // Create table if not exists
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS gallery_settings (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        setting_key VARCHAR(50) UNIQUE NOT NULL,
+        setting_value VARCHAR(50) NOT NULL DEFAULT '1',
+        description VARCHAR(255),
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Insert default settings if not exist
+    await connection.execute(`
+      INSERT IGNORE INTO gallery_settings (setting_key, setting_value, description)
+      VALUES 
+        ('videos_visible', '1', 'Show/Hide video section'),
+        ('photos_visible', '1', 'Show/Hide photo section')
+    `);
+    
+    connection.release();
+    
+    console.log('✅ [INIT_SETTINGS] Gallery settings table initialized');
+    res.json({ message: '✅ Gallery settings initialized successfully!' });
+  } catch (error) {
+    console.error('❌ [INIT_SETTINGS] ERROR:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ====== SIMPLIFIED GALLERY SETTINGS ENDPOINTS ======
+
+// SIMPLE DEBUG TEST
+app.get('/ping', (req, res) => {
+  console.log('🔔 PING received');
+  res.json({ status: 'alive', timestamp: new Date().toISOString() });
+});
+
+// Get all gallery visibility settings
+app.get('/gallery-settings-get', async (req, res) => {
+  try {
+    console.log('🔔 GET /gallery-settings-get received');
+    const connection = await pool.getConnection();
+    const [settings] = await connection.execute(`SELECT setting_key, setting_value FROM gallery_settings WHERE setting_key IN ('videos_visible', 'photos_visible')`);
+    connection.release();
+    
+    const result = { videos_visible: 1, photos_visible: 1 };
+    settings.forEach(s => { 
+      // Ensure values are stored as proper integers (0 or 1)
+      result[s.setting_key] = parseInt(s.setting_value) === 1 ? 1 : 0;
+    });
+    
+    console.log('✅ [GET_SETTINGS] Returned:', result);
+    res.json(result);
+  } catch (error) {
+    console.error('❌ [GET_SETTINGS] ERROR:', error.message);
+    res.json({ videos_visible: 1, photos_visible: 1 });
+  }
+});
+
+// Update gallery visibility setting - SIMPLIFIED POST
+app.post('/gallery-settings-update', async (req, res) => {
+  try {
+    const { key, value } = req.body;
+    
+    console.log(`🔔 POST /gallery-settings-update received: key=${key}, value=${value}`);
+    
+    if (!key || !['videos_visible', 'photos_visible'].includes(key)) {
+      return res.status(400).json({ error: 'Invalid key' });
+    }
+    
+    const connection = await pool.getConnection();
+    const dbValue = value ? 1 : 0;
+    
+    await connection.execute(
+      'INSERT INTO gallery_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = CURRENT_TIMESTAMP',
+      [key, dbValue, dbValue]
+    );
+    
+    connection.release();
+    
+    console.log(`✅ [UPDATE_SETTINGS] Successfully set ${key} = ${dbValue}`);
+    res.json({ success: true, [key]: dbValue });
+  } catch (error) {
+    console.error('❌ [UPDATE_SETTINGS] ERROR:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// 404 handler (catch-all for undefined routes)
+app.use((req, res) => {
+  console.warn(`⚠️ [404] Route not found: ${req.method} ${req.path}`);
+  res.status(404).json({ error: `Route not found: ${req.method} ${req.path}` });
+});
+
+// Error handler middleware (must be defined AFTER all routes and 404 handler)
+app.use((err, req, res, next) => {
+  console.error('[SERVER ERROR]', err);
+  res.status(500).json({ error: 'Server error: ' + err.message });
 });
 
 const PORT = 3001;

@@ -1,0 +1,61 @@
+◇ injected env (7) from .env.local // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (1) from .env // tip: ⌘ override existing { override: true }
+[INIT] ✅ RBAC tables already exist
+[INIT] ✅ User roles verified and assigned
+[INIT] ✅ Gallery settings table already exists
+
+╔════════════════════════════════════════════════════════════════╗
+║         🚀 AURUM HOMEOPATHY - BACKEND SERVER 🚀               ║
+╚════════════════════════════════════════════════════════════════╝
+
+📊 DATABASE CONNECTION INFO:
+   Host:     srv1752.hstgr.io
+   Port:     3306
+   User:     u154384799_Aurum
+   Database: u154384799_Ahc
+   Status:   🟢 CONNECTED
+
+🌍 SERVER STATUS:
+   Protocol: http://
+   Host:     localhost
+   Port:     3001
+   URL:      http://localhost:3001
+   Status:   🟢 READY
+
+⏰ Started at: 2026-09-17T19:35:12.476Z
+
+🔗 API ENDPOINTS:
+
+   HEALTH & DIAGNOSTICS:
+   [✓] GET  /health               - Health check
+   [✓] GET  /diagnose             - Full diagnostics
+
+   AUTHENTICATION:
+   [✓] POST /login                - Login user with email/password
+   [✓] POST /register             - Register new user with role
+
+   USER MANAGEMENT (Super Admin):
+   [✓] GET  /users                - Get all users with roles
+   [✓] POST /users                - Create new user
+   [✓] GET  /users/:id            - Get single user
+   [✓] PUT  /users/:id            - Update user details/role
+   [✓] DELETE /users/:id          - Delete user
+
+   APPOINTMENT MANAGEMENT:
+   [✓] GET  /appointments         - Get all appointments
+   [✓] POST /appointments         - Create new appointment
+   [✓] GET  /appointments/:id     - Get single appointment
+   [✓] PUT  /appointments/:id     - Update appointment
+   [✓] DELETE /appointments/:id   - Delete appointment
+
+   SYSTEM CONTROL:
+   [✓] GET  /system-status        - Get system status
+   [✓] PUT  /system-status        - Update system status
+
+📝 LOGGING:
+   All requests logged with 🔐 [METHOD] prefix
+   Database operations logged in detail
+   Errors logged with ❌ prefix
+
+🎯 Ready to accept connections!
+
