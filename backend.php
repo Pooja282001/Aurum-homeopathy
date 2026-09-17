@@ -183,6 +183,21 @@ if ($endpoint === 'login' && $method === 'POST') {
         $roles[] = $role['role_name'];
     }
     
+    // If no roles found in user_roles table, assign based on email patterns (fallback)
+    if (count($roles) === 0) {
+        $email = strtolower($user['email']);
+        
+        if (strpos($email, 'admin') !== false || strpos($email, 'superadmin') !== false) {
+            $roles[] = 'super_admin';
+        } elseif (strpos($email, 'doctor') !== false) {
+            $roles[] = 'doctor';
+        } elseif (strpos($email, 'nurse') !== false) {
+            $roles[] = 'nurse';
+        } else {
+            $roles[] = 'patient';
+        }
+    }
+    
     // Get user permissions
     $perms_query = "
         SELECT DISTINCT p.name as permission

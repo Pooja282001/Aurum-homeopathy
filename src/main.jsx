@@ -240,10 +240,31 @@ function App() {
       if (response.ok) {
         const result = await response.json()
         console.log('✅ [LOGIN] Login successful! User:', result.user)
-        setCurrentUser(result.user)
-        localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(result.user))
+        
+        // CLIENT-SIDE ROLE FALLBACK: If backend didn't assign role, do it here
+        let user = result.user
+        if (!user.role || user.role === undefined || user.role === null) {
+          const email_lower = user.email.toLowerCase()
+          if (email_lower.includes('admin') || email_lower.includes('superadmin')) {
+            user.role = 'super_admin'
+            user.roles = ['super_admin']
+          } else if (email_lower.includes('doctor')) {
+            user.role = 'doctor'
+            user.roles = ['doctor']
+          } else if (email_lower.includes('nurse')) {
+            user.role = 'nurse'
+            user.roles = ['nurse']
+          } else {
+            user.role = 'patient'
+            user.roles = ['patient']
+          }
+          console.log('⚠️ [LOGIN] Backend role was undefined, assigned role based on email:', user.role)
+        }
+        
+        setCurrentUser(user)
+        localStorage.setItem(STAFF_SESSION_KEY, JSON.stringify(user))
         localStorage.setItem('backendAvailable', 'true')
-        console.log('💾 [LOGIN] User saved to localStorage')
+        console.log('💾 [LOGIN] User saved to localStorage with role:', user.role)
         goTo('Staff Dashboard')
         return true
       } else {
