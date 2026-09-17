@@ -35,20 +35,20 @@ function getApiBaseUrl() {
   
   // For localhost development
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    const url = 'http://localhost:5174/api/backend.php'
+    const url = 'http://localhost:5174/backend.php'
     console.log('✅ [getApiBaseUrl] Using local PHP backend:', url)
     return url
   }
   
   // For production on aurumhomeopathy.com
   if (hostname === 'aurumhomeopathy.com' || hostname === 'www.aurumhomeopathy.com') {
-    const url = `${protocol}//${hostname}/api/backend.php`
+    const url = `${protocol}//${hostname}/backend.php`
     console.log('✅ [getApiBaseUrl] Using production PHP backend:', url)
     return url
   }
   
   // For other hostnames (mobile/tablet on same network)
-  const url = `${protocol}//${hostname}/api/backend.php`
+  const url = `${protocol}//${hostname}/backend.php`
   console.log('✅ [getApiBaseUrl] Using PHP backend:', url)
   return url
 }
