@@ -1,11 +1,12 @@
 <?php
-// Database configuration - reads from environment variables (Hostinger)
-// Local development uses hardcoded values below
+// Database configuration - Hostinger PHP Backend
+// For PHP apps on Hostinger, use 'localhost' as host (NOT remote srv1752.hstgr.io)
+
 return [
-    'db_host' => $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?? 'srv1752.hstgr.io',
-    'db_name' => $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?? 'u154384799_Ahc',
-    'db_user' => $_ENV['DB_USER'] ?? getenv('DB_USER') ?? 'u154384799_Aurum',
-    'db_password' => $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?? 'Aurum2025',
-    'db_charset' => $_ENV['DB_CHARSET'] ?? getenv('DB_CHARSET') ?? 'utf8mb4',
-    'allowed_origin' => $_ENV['ALLOWED_ORIGIN'] ?? getenv('ALLOWED_ORIGIN') ?? 'https://aurumhomeopathy.com',
+    'db_host' => 'localhost',
+    'db_port' => 3306,
+    'db_name' => 'u154384799_Ahc',
+    'db_user' => 'u154384799_Aurum',
+    'db_password' => 'Aurum2025',
+    'db_charset' => 'utf8mb4',
 ];

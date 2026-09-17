@@ -26,29 +26,30 @@ const STAFF_USERS = {
   admin: { username: 'admin', password: 'admin123', role: 'super_admin' },
 }
 
-// Get dynamic API base URL - works on localhost, mobile, tablets, and different networks
+// Get dynamic API base URL - uses PHP backend on Hostinger
 function getApiBaseUrl() {
   const hostname = window.location.hostname
   const protocol = window.location.protocol
   
   console.log('🔍 [getApiBaseUrl] Hostname:', hostname, 'Protocol:', protocol)
   
-  // Use environment variable if available, otherwise construct from current host
-  if (import.meta.env.VITE_API_BASE_URL && !hostname.includes('localhost')) {
-    console.log('✅ [getApiBaseUrl] Using VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
-    return import.meta.env.VITE_API_BASE_URL
-  }
-  
-  // For localhost, mobile on same network, or any other host
+  // For localhost development
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    const url = 'http://localhost:3001'
-    console.log('✅ [getApiBaseUrl] Using localhost:', url)
+    const url = 'http://localhost:5174/api/backend.php'
+    console.log('✅ [getApiBaseUrl] Using local PHP backend:', url)
     return url
   }
   
-  // For access from mobile/tablet/other devices on same network
-  const url = `${protocol}//${hostname}:3001`
-  console.log('✅ [getApiBaseUrl] Using dynamic URL:', url)
+  // For production on aurumhomeopathy.com
+  if (hostname === 'aurumhomeopathy.com' || hostname === 'www.aurumhomeopathy.com') {
+    const url = `${protocol}//${hostname}/api/backend.php`
+    console.log('✅ [getApiBaseUrl] Using production PHP backend:', url)
+    return url
+  }
+  
+  // For other hostnames (mobile/tablet on same network)
+  const url = `${protocol}//${hostname}/api/backend.php`
+  console.log('✅ [getApiBaseUrl] Using PHP backend:', url)
   return url
 }
 
