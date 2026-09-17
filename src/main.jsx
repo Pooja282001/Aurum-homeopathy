@@ -113,7 +113,7 @@ function App() {
   useEffect(() => {
     if (!currentUser) return
     // Direct database query to backend
-    fetch(getApiBaseUrl() + '/appointments')
+    fetch(getApiBaseUrl() + '?action=appointments')
       .then((response) => response.ok ? response.json() : Promise.reject('Failed'))
       .then((result) => setAppointments(result.appointments || result || []))
       .catch(() => console.warn('⚠️ Could not fetch appointments'))
@@ -132,7 +132,7 @@ function App() {
     const fetchSystemStatus = async () => {
       try {
         // Direct query to Node.js backend endpoint (uses direct database queries)
-        const response = await fetch(getApiBaseUrl() + '/system-status')
+        const response = await fetch(getApiBaseUrl() + '?action=system-status')
         if (!response.ok) throw new Error('Failed to fetch system status')
         const result = await response.json()
         setSystemStatus(result)
@@ -166,7 +166,7 @@ function App() {
       
       // Direct backend database query
       try {
-        const response = await fetch(getApiBaseUrl() + '/appointments', {
+        const response = await fetch(getApiBaseUrl() + '?action=appointments', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(appointmentData)
@@ -196,7 +196,7 @@ function App() {
     
     // Always try backend first (direct database queries)
     try {
-      const apiUrl = getApiBaseUrl() + '/login'
+      const apiUrl = getApiBaseUrl() + '?action=login'
       console.log('📤 [LOGIN] Sending POST request to:', apiUrl)
       
       const controller = new AbortController()
@@ -254,7 +254,7 @@ function App() {
     const newStatus = { ...systemStatus, ...updates }
     
     // Direct database query to backend endpoint
-    fetch(getApiBaseUrl() + '/system-status', {
+    fetch(getApiBaseUrl() + '?action=system-status', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -654,7 +654,7 @@ function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logo
   // Load users if Super Admin
   useEffect(() => {
     if (user.role === 'super_admin') {
-      fetch(getApiBaseUrl() + '/users')
+      fetch(getApiBaseUrl() + '?action=users')
         .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch users'))
         .then(result => setUsers(result.users || result || []))
         .catch(err => console.warn('⚠️ Failed to load users:', err))
@@ -991,7 +991,7 @@ function CreateUser({ goTo }) {
     }
     try {
       // Direct database query to create user
-      const response = await fetch(getApiBaseUrl() + '/register', {
+      const response = await fetch(getApiBaseUrl() + '?action=register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role })
@@ -1106,7 +1106,7 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
     }
     try {
       // Direct database query to create appointment
-      await fetch(getApiBaseUrl() + '/appointments', {
+      await fetch(getApiBaseUrl() + '?action=appointments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newAppointment)
