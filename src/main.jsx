@@ -33,10 +33,10 @@ function getApiBaseUrl() {
   
   console.log('🔍 [getApiBaseUrl] Hostname:', hostname, 'Protocol:', protocol)
   
-  // For localhost development - use production backend for testing
+  // For localhost development - use local Node.js backend on port 3001
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    const url = 'https://aurumhomeopathy.com/backend.php'
-    console.log('✅ [getApiBaseUrl] Using production backend for local test:', url)
+    const url = 'http://localhost:3001'
+    console.log('✅ [getApiBaseUrl] Using local Node.js backend:', url)
     return url
   }
   
@@ -51,6 +51,19 @@ function getApiBaseUrl() {
   const url = `${protocol}//${hostname}/backend.php`
   console.log('✅ [getApiBaseUrl] Using PHP backend:', url)
   return url
+}
+
+// Helper to build endpoint URLs (handles both Node.js and PHP backends)
+function getEndpointUrl(baseUrl, action, id = null) {
+  if (baseUrl.includes(':3001')) {
+    // Node.js backend uses /endpoint format
+    if (id) return `${baseUrl}/${action}/${id}`
+    return `${baseUrl}/${action}`
+  } else {
+    // PHP backend uses ?action=endpoint format
+    if (id) return `${baseUrl}/${action}/${id}`
+    return `${baseUrl}?action=${action}`
+  }
 }
 
 function getSystemStatusDefault() {
@@ -113,7 +126,9 @@ function App() {
   useEffect(() => {
     if (!currentUser) return
     // Direct database query to backend
-    fetch(getApiBaseUrl() + '?action=appointments')
+    const baseUrl = getApiBaseUrl()
+    const url = getEndpointUrl(baseUrl, 'appointments')
+    fetch(url)
       .then((response) => response.ok ? response.json() : Promise.reject('Failed'))
       .then((result) => setAppointments(result.appointments || result || []))
       .catch(() => console.warn('⚠️ Could not fetch appointments'))
@@ -132,7 +147,9 @@ function App() {
     const fetchSystemStatus = async () => {
       try {
         // Direct query to Node.js backend endpoint (uses direct database queries)
-        const response = await fetch(getApiBaseUrl() + '?action=system-status')
+        const baseUrl = getApiBaseUrl()
+        const url = getEndpointUrl(baseUrl, 'system-status')
+        const response = await fetch(url)
         if (!response.ok) throw new Error('Failed to fetch system status')
         const result = await response.json()
         setSystemStatus(result)
@@ -166,7 +183,9 @@ function App() {
       
       // Direct backend database query
       try {
-        const response = await fetch(getApiBaseUrl() + '?action=appointments', {
+        const baseUrl = getApiBaseUrl()
+        const url = getEndpointUrl(baseUrl, 'appointments')
+        const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(appointmentData)
@@ -196,7 +215,12 @@ function App() {
     
     // Always try backend first (direct database queries)
     try {
-      const apiUrl = getApiBaseUrl() + '?action=login'
+      // Determine API endpoint format based on backend type
+      const baseUrl = getApiBaseUrl()
+      const apiUrl = baseUrl.includes(':3001') 
+        ? baseUrl + '/login'          // Node.js backend uses /login
+        : baseUrl + '?action=login'   // PHP backend uses ?action=login
+      
       console.log('📤 [LOGIN] Sending POST request to:', apiUrl)
       
       const controller = new AbortController()
@@ -254,7 +278,9 @@ function App() {
     const newStatus = { ...systemStatus, ...updates }
     
     // Direct database query to backend endpoint
-    fetch(getApiBaseUrl() + '?action=system-status', {
+    const baseUrl = getApiBaseUrl()
+    const url = getEndpointUrl(baseUrl, 'system-status')
+    fetch(url, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -640,7 +666,7 @@ function StaffLogin({ login }) {
 
   const canShowCreateUser = true // Will be checked in main dashboard
 
-  return <Subpage eyebrow="Staff access / Secure login" title={<>Care team<br /><em>portal.</em></>}><div className="login-layout"><form className="staff-login" onSubmit={showForgotForm ? handleForgotPassword : submit}><label>Email<input name="username" type="email" required autoComplete="username" value={showForgotForm ? forgotEmail : undefined} onChange={(e) => setForgotEmail(e.target.value)} /></label>{!showForgotForm && <label className="password-label">Password<div className="password-field"><input name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" /><button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>👁️</button></div></label>}{error && <p className="form-error">{error}</p>}{forgotMessage && <p className="form-success">{forgotMessage}</p>}<button className="primary-btn" type="submit">{showForgotForm ? 'Send Reset Link' : 'Sign in'} <span>↗</span></button>{!showForgotForm && <button type="button" className="text-btn forgot-link" onClick={() => setShowForgotForm(true)}>Forgot password?</button>}{showForgotForm && <button type="button" className="text-btn" onClick={() => { setShowForgotForm(false); setForgotEmail(''); }}>Back to login</button>}</form><div className="login-info"><span className="big-icon">✦</span><h2>One place for incoming appointments.</h2><p>Doctors can review requests. Super admins can update or remove them.</p><p className="demo-credentials"><strong>Local demo:</strong> doctor / doctor123<br /><strong>Hostinger:</strong> use a user created in the users table</p></div></div></Subpage>
+  return <Subpage eyebrow="Staff access / Secure login" title={<>Care team<br /><em>portal.</em></>}><div className="login-layout"><form className="staff-login" onSubmit={showForgotForm ? handleForgotPassword : submit}><label>Email<input name="username" type="text" required autoComplete="username" value={showForgotForm ? forgotEmail : undefined} onChange={(e) => setForgotEmail(e.target.value)} /></label>{!showForgotForm && <label className="password-label">Password<div className="password-field"><input name="password" type={showPassword ? "text" : "password"} required autoComplete="current-password" /><button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>👁️</button></div></label>}{error && <p className="form-error">{error}</p>}{forgotMessage && <p className="form-success">{forgotMessage}</p>}<button className="primary-btn" type="submit">{showForgotForm ? 'Send Reset Link' : 'Sign in'} <span>↗</span></button>{!showForgotForm && <button type="button" className="text-btn forgot-link" onClick={() => setShowForgotForm(true)}>Forgot password?</button>}{showForgotForm && <button type="button" className="text-btn" onClick={() => { setShowForgotForm(false); setForgotEmail(''); }}>Back to login</button>}</form><div className="login-info"><span className="big-icon">✦</span><h2>One place for incoming appointments.</h2><p>Doctors can review requests. Super admins can update or remove them.</p><p className="demo-credentials"><strong>Local demo:</strong> doctor / doctor123<br /><strong>Hostinger:</strong> use a user created in the users table</p></div></div></Subpage>
 }
 
 function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logout, goTo }) {
@@ -654,7 +680,9 @@ function StaffDashboard({ user, appointments, saveAppointments, apiEnabled, logo
   // Load users if Super Admin
   useEffect(() => {
     if (user.role === 'super_admin') {
-      fetch(getApiBaseUrl() + '?action=users')
+      const baseUrl = getApiBaseUrl()
+      const url = getEndpointUrl(baseUrl, 'users')
+      fetch(url)
         .then(response => response.ok ? response.json() : Promise.reject('Failed to fetch users'))
         .then(result => setUsers(result.users || result || []))
         .catch(err => console.warn('⚠️ Failed to load users:', err))
@@ -1075,6 +1103,24 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
   const [showPasswordField, setShowPasswordField] = useState(null)
   const [passwordValue, setPasswordValue] = useState('')
   const [offlineComment, setOfflineComment] = useState(systemStatus?.comment || 'System is under maintenance')
+  const [searchAppointmentQuery, setSearchAppointmentQuery] = useState('')
+  const [searchUserQuery, setSearchUserQuery] = useState('')
+
+  // Filter appointments by name, email, or phone
+  const filteredAppointments = appointments.filter(apt => {
+    const query = searchAppointmentQuery.toLowerCase()
+    return (apt.name && apt.name.toLowerCase().includes(query)) ||
+           (apt.email && apt.email.toLowerCase().includes(query)) ||
+           (apt.phone && apt.phone.toLowerCase().includes(query))
+  })
+
+  // Filter users by name, email, or phone
+  const filteredUsers = users.filter(usr => {
+    const query = searchUserQuery.toLowerCase()
+    return (usr.name && usr.name.toLowerCase().includes(query)) ||
+           (usr.email && usr.email.toLowerCase().includes(query)) ||
+           (usr.phone && usr.phone.toLowerCase().includes(query))
+  })
 
   // Load users - Direct database query
   useEffect(() => {
@@ -1106,7 +1152,9 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
     }
     try {
       // Direct database query to create appointment
-      await fetch(getApiBaseUrl() + '?action=appointments', {
+      const baseUrl = getApiBaseUrl()
+      const url = getEndpointUrl(baseUrl, 'appointments')
+      await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newAppointment)
@@ -1327,9 +1375,18 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
         {adminSection === 'appointments' && (
           <div className="admin-section">
             <h2>📋 Appointments Management</h2>
-            <button className="primary-btn" onClick={() => setNewAppointmentForm(!newAppointmentForm)}>
-              {newAppointmentForm ? '❌ Cancel' : '➕ Create New Appointment'}
-            </button>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <input 
+                type="text" 
+                placeholder="🔍 Search by name, email, or phone..." 
+                value={searchAppointmentQuery}
+                onChange={(e) => setSearchAppointmentQuery(e.target.value)}
+                style={{flex: 1, padding: '10px', border: '1px solid #ddd', borderRadius: '5px'}}
+              />
+              <button className="primary-btn" onClick={() => setNewAppointmentForm(!newAppointmentForm)}>
+                {newAppointmentForm ? '❌ Cancel' : '➕ Create New Appointment'}
+              </button>
+            </div>
 
             {newAppointmentForm && (
               <div className="form-card">
@@ -1347,10 +1404,10 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
             )}
 
             <div className="appointments-list">
-              {appointments.length === 0 ? (
-                <p>No appointments</p>
+              {filteredAppointments.length === 0 ? (
+                <p>{searchAppointmentQuery ? '❌ No appointments found matching your search' : 'No appointments'}</p>
               ) : (
-                appointments.map((apt) => (
+                filteredAppointments.map((apt) => (
                   <div className="apt-card" key={apt.id}>
                     {editingId === apt.id ? (
                       <div className="edit-form">
@@ -1388,7 +1445,16 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
         {adminSection === 'users' && (
           <div className="admin-section">
             <h2>👥 Users Management</h2>
-            <button className="primary-btn" onClick={() => goTo('Create User')}>➕ Create New User</button>
+            <div style={{display: 'flex', gap: '10px', marginBottom: '15px'}}>
+              <input 
+                type="text" 
+                placeholder="🔍 Search by name, email, or phone..." 
+                value={searchUserQuery}
+                onChange={(e) => setSearchUserQuery(e.target.value)}
+                style={{flex: 1, padding: '10px', border: '1px solid #ddd', borderRadius: '5px'}}
+              />
+              <button className="primary-btn" onClick={() => goTo('Create User')}>➕ Create New User</button>
+            </div>
 
             <table className="users-table">
               <thead>
@@ -1400,7 +1466,10 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {filteredUsers.length === 0 ? (
+                  <tr><td colSpan="4" style={{textAlign: 'center', padding: '20px'}}>{searchUserQuery ? '❌ No users found matching your search' : 'No users'}</td></tr>
+                ) : (
+                  filteredUsers.map((u) => (
                   <tr key={u.id}>
                     {editingId === u.id ? (
                       <>
@@ -1449,7 +1518,8 @@ function SuperAdminDashboard({ user, appointments, saveAppointments, apiEnabled,
                       </>
                     )}
                   </tr>
-                ))}
+                ))
+                )}
               </tbody>
             </table>
           </div>

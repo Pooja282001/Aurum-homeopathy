@@ -17,7 +17,8 @@
     "react-dom": "latest",
     "express": "latest",
     "mysql2": "latest",
-    "cors": "latest"
+    "cors": "latest",
+    "dotenv": "latest"
   },
   "devDependencies": {}
 }

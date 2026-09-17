@@ -1,7 +1,12 @@
+import dotenv from 'dotenv';
 import mysql from 'mysql2/promise';
 import express from 'express';
 import cors from 'cors';
 import crypto from 'crypto';
+
+// Load environment variables from .env or .env.local
+dotenv.config({ path: '.env.local' });
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -1117,30 +1122,8 @@ initializeRBAC().then(() => {
 
 🎯 Ready to accept connections!
 `);
-   [OK] GET  /users/:id           - Get single user
-   [OK] PUT  /users/:id           - Update user (name, email, password, role)
-   [OK] DELETE /users/:id         - Delete user
-
-   APPOINTMENTS:
-   [OK] GET  /appointments        - Get all appointments
-   [OK] POST /appointments        - Book new appointment
-   [OK] GET  /appointments/:id    - Get single appointment
-   [OK] PUT  /appointments/:id    - Update appointment (Admin/Doctor)
-   [OK] DELETE /appointments/:id  - Delete appointment (Admin)
-
-   ADMIN/DATA:
-   [OK] GET  /admin/data          - Get all users & appointments
-   [OK] GET  /health              - Check server status
-   [OK] GET  /diagnose            - Check system status, users, roles
-
-[DATABASE] u154384799_Ahc @ srv1752.hstgr.io
-
-[IMPORTANT] All data is saved to Hostinger database!
-   Both local and production use the SAME database.
-
-`)
   });
-}).catch(err => {
-  console.error('[ERROR] Failed to initialize RBAC:', err.message);
+}).catch((err) => {
+  console.error('❌ [FATAL] Failed to initialize RBAC:', err.message);
   process.exit(1);
 });
